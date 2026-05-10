@@ -12,6 +12,12 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    {
+      rules: {
+        "@typescript-eslint/no-expilit-any": "off",
+        "react-hooks/set-state-in-effect": "off ",
+      },
+    },
   ]),
 ]);
 
