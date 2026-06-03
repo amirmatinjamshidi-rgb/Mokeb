@@ -1,0 +1,61 @@
+{
+  "$schema": "https://design-tokens.github.io/community-group/format/",
+  "description": "Brand tokens extracted from features/UI/button.tsx and app/globals.css — input for Figma variable generation via /figma-generate-library",
+  "color": {
+    "brand": {
+      "green": {
+        "dark": { "$value": "#175E47", "$type": "color", "$description": "Primary brand green (button darkGreen, navbar, sidebar)" },
+        "dark-hover": { "$value": "#1F7E5F", "$type": "color" },
+        "light": { "$value": "#279F78", "$type": "color", "$description": "button lightGreen" }
+      },
+      "gold": {
+        "default": { "$value": "#D8B648", "$type": "color", "$description": "Warning / accent (button warning, AbilityCard icons)" },
+        "hover": { "$value": "#BA9828", "$type": "color" },
+        "light": { "$value": "#DFC369", "$type": "color", "$description": "button LightWarning" }
+      },
+      "neutral": {
+        "gray-button": { "$value": "#ACB9B5", "$type": "color" },
+        "gray-text": { "$value": "#61756f", "$type": "color", "$description": "text-grayScale utility" },
+        "gray-background": { "$value": "#f5f9f6", "$type": "color", "$description": "Gray-backGround utility" },
+        "text-on-dark": { "$value": "#2D2D2D", "$type": "color" }
+      }
+    }
+  },
+  "dimension": {
+    "button": {
+      "height": {
+        "xs": { "$value": "32px", "$type": "dimension" },
+        "sm": { "$value": "36px", "$type": "dimension" },
+        "md": { "$value": "40px", "$type": "dimension" },
+        "lg": { "$value": "44px", "$type": "dimension" },
+        "xl": { "$value": "48px", "$type": "dimension" },
+        "2xl": { "$value": "56px", "$type": "dimension" }
+      },
+      "width": {
+        "sm": { "$value": "112px", "$type": "dimension" },
+        "md": { "$value": "132px", "$type": "dimension" },
+        "lg": { "$value": "148px", "$type": "dimension" },
+        "xl": { "$value": "172px", "$type": "dimension" }
+      }
+    }
+  },
+  "borderRadius": {
+    "button": {
+      "sm": { "$value": "12px", "$type": "borderRadius", "$description": "rounded-xl (radius=none)" },
+      "md": { "$value": "16px", "$type": "borderRadius", "$description": "rounded-2xl (radius=md, default)" },
+      "lg": { "$value": "24px", "$type": "borderRadius", "$description": "rounded-3xl (radius=lg)" }
+    }
+  },
+  "component": {
+    "Button": {
+      "$description": "features/UI/button.tsx — 6 colors × 3 radii × 4 borders × 6 sizes × 5 widths",
+      "variants": {
+        "color": ["darkGreen", "lightGreen", "warning", "LightWarning", "white", "gray"],
+        "radius": ["none", "md", "lg"],
+        "border": ["none", "green", "gray", "orange"],
+        "size": ["xs", "sm", "md", "lg", "xl", "twoxl"],
+        "width": ["sm", "md", "lg", "xl", "auto"]
+      }
+    }
+  }
+}

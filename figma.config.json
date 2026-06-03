@@ -1,0 +1,12 @@
+{
+  "codeConnect": {
+    "include": ["features/UI/**/*.figma.ts", "features/UI/**/*.figma.tsx"],
+    "parser": "react",
+    "paths": {
+      "@/*": ["./"]
+    },
+    "importPaths": {
+      "features/UI/*": "@/features/UI/*"
+    }
+  }
+}
