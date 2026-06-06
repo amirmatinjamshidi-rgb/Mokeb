@@ -23,8 +23,11 @@
     "next": "^16.0.10",
     "radix-ui": "^1.4.3",
     "react": "^19.2.3",
+    "react-date-object": "^2.1.9",
     "react-dom": "^19.2.3",
+    "react-element-popper": "^2.1.7",
     "react-hook-form": "^7.68.0",
+    "react-multi-date-picker": "^4.5.2",
     "tailwind-merge": "^3.5.0",
     "zod": "^4.1.13",
     "zustand": "^5.0.9"
