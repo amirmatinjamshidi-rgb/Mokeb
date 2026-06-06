@@ -4,6 +4,11 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  --spacing-site-gutter: 4.5rem;
+  /* Generates max-w-site, max-w-form-row, max-w-nav utilities */
+  --max-width-site: 81rem;
+  --max-width-form-row: 67rem;
+  --max-width-nav: 90rem;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
@@ -123,12 +128,22 @@
   color: #61756f;
 }
 
+@layer utilities {
+  .page-container {
+    @apply mx-auto w-full min-w-0 max-w-site px-4 sm:px-6 lg:px-8;
+  }
+
+  .page-section-pad {
+    @apply px-4 sm:px-6 lg:px-[72px];
+  }
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground overflow-x-hidden;
   }
 }
