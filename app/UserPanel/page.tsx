@@ -1,7 +1,10 @@
-import React from "react";
 
-function page() {
-  return <div></div>;
+export default function UserPanelDashboardPage() {
+
+
+  return (
+    <div className="space-y-8">
+    
+    </div>
+  );
 }
-
-export default page;

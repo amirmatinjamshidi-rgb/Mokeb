@@ -1,13 +1,9 @@
-import SideBar from "@/features/Layout/sidebar";
-export default function RootLayout({
+﻿import { UserPanelLayoutClient } from "@/features/user-panel/components/layout/UserPanelLayoutClient";
+
+export default function UserPanelLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  return (
-    <html lang="fa" dir="rtl">
-      <SideBar />
-      {children}
-    </html>
-  );
+  return <UserPanelLayoutClient>{children}</UserPanelLayoutClient>;
 }
