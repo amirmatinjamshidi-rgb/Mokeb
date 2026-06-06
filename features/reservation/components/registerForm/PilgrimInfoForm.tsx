@@ -23,8 +23,9 @@ import {
 } from "lucide-react";
 
 import Button from "@/features/shared/ui/button";
-import { IconLabelInput } from "@/features/shared/ui/IconLabelInput";
+import { isControlledInputValid } from "@/features/shared/lib/inputValidation";
 import { cn } from "@/features/shared/lib/utils";
+import { IconLabelInput } from "@/features/shared/ui/IconLabelInput";
 import type {
   PilgrimFormValues,
   RegistrationFormValues,
@@ -84,7 +85,11 @@ export default function PilgrimInfoForm({
                   // label="نام"
                   icon={<User size={18} />}
                   placeholder="نام"
-                  className={cn(fieldState.error && "border-red-400")}
+                  isValid={isControlledInputValid({
+                    value: inputString(f.value),
+                    fieldState,
+                  })}
+                className={cn(fieldState.error && "border-red-400")}
                 />
                 {fieldState.error?.message ? (
                   <p className="mt-1.5 text-right text-xs text-red-600">
@@ -109,7 +114,11 @@ export default function PilgrimInfoForm({
                   // label="نام خانوادگی"
                   icon={<User size={18} />}
                   placeholder="نام خانوادگی"
-                  className={cn(fieldState.error && "border-red-400")}
+                  isValid={isControlledInputValid({
+                    value: inputString(f.value),
+                    fieldState,
+                  })}
+                className={cn(fieldState.error && "border-red-400")}
                 />
                 {fieldState.error?.message ? (
                   <p className="mt-1.5 text-right text-xs text-red-600">
@@ -123,7 +132,7 @@ export default function PilgrimInfoForm({
           <Controller
             name={field("nickName")}
             control={control}
-            render={({ field: f }) => (
+            render={({ field: f, fieldState }) => (
               <IconLabelInput
                 name={f.name}
                 ref={f.ref}
@@ -133,6 +142,11 @@ export default function PilgrimInfoForm({
                 // label="نام مستعار"
                 icon={<User size={18} />}
                 placeholder="نام مستعار"
+                isValid={isControlledInputValid({
+                  value: inputString(f.value),
+                  fieldState,
+                  required: false,
+                })}
               />
             )}
           />
@@ -151,7 +165,11 @@ export default function PilgrimInfoForm({
                   // label="نام پدر"
                   icon={<User size={18} />}
                   placeholder="نام پدر"
-                  className={cn(fieldState.error && "border-red-400")}
+                  isValid={isControlledInputValid({
+                    value: inputString(f.value),
+                    fieldState,
+                  })}
+                className={cn(fieldState.error && "border-red-400")}
                 />
                 {fieldState.error?.message ? (
                   <p className="mt-1.5 text-right text-xs text-red-600">
@@ -261,6 +279,10 @@ export default function PilgrimInfoForm({
                 // label="کد ملی"
                 icon={<ShieldCheck size={18} />}
                 placeholder="کد ملی"
+                isValid={isControlledInputValid({
+                  value: inputString(f.value),
+                  fieldState,
+                })}
                 className={cn(fieldState.error && "border-red-400")}
               />
               {fieldState.error?.message ? (
@@ -339,7 +361,11 @@ export default function PilgrimInfoForm({
                   // label="موبایل 1"
                   icon={<Phone size={18} />}
                   placeholder="شماره موبایل 1 (واتساپ)"
-                  className={cn(fieldState.error && "border-red-400")}
+                  isValid={isControlledInputValid({
+                    value: inputString(f.value),
+                    fieldState,
+                  })}
+                className={cn(fieldState.error && "border-red-400")}
                 />
                 {fieldState.error?.message ? (
                   <p className="mt-1.5 text-right text-xs text-red-600">
@@ -364,7 +390,11 @@ export default function PilgrimInfoForm({
                   // label="موبایل 2"
                   icon={<Phone size={18} />}
                   placeholder="شماره موبایل 2 (واتساپ)"
-                  className={cn(fieldState.error && "border-red-400")}
+                  isValid={isControlledInputValid({
+                    value: inputString(f.value),
+                    fieldState,
+                  })}
+                className={cn(fieldState.error && "border-red-400")}
                 />
                 {fieldState.error?.message ? (
                   <p className="mt-1.5 text-right text-xs text-red-600">
@@ -390,6 +420,10 @@ export default function PilgrimInfoForm({
                 // label="تلفن آشنا"
                 icon={<ContactRound size={18} />}
                 placeholder="تلفن یکی از آشنایان در ایران"
+                isValid={isControlledInputValid({
+                  value: inputString(f.value),
+                  fieldState,
+                })}
                 className={cn(fieldState.error && "border-red-400")}
               />
               {fieldState.error?.message ? (
@@ -416,7 +450,11 @@ export default function PilgrimInfoForm({
                   // label="گروه خونی"
                   icon={<Droplets size={18} />}
                   placeholder="گروه خونی"
-                  className={cn(fieldState.error && "border-red-400")}
+                  isValid={isControlledInputValid({
+                    value: inputString(f.value),
+                    fieldState,
+                  })}
+                className={cn(fieldState.error && "border-red-400")}
                 />
                 {fieldState.error?.message ? (
                   <p className="mt-1.5 text-right text-xs text-red-600">
@@ -441,7 +479,11 @@ export default function PilgrimInfoForm({
                   // label="سابقه بیماری"
                   icon={<HeartPulse size={18} />}
                   placeholder="سابقه بیماری"
-                  className={cn(fieldState.error && "border-red-400")}
+                  isValid={isControlledInputValid({
+                    value: inputString(f.value),
+                    fieldState,
+                  })}
+                className={cn(fieldState.error && "border-red-400")}
                 />
                 {fieldState.error?.message ? (
                   <p className="mt-1.5 text-right text-xs text-red-600">

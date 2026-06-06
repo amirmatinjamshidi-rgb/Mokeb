@@ -3,6 +3,7 @@
 import { forwardRef } from "react";
 import type { InputHTMLAttributes, ReactNode } from "react";
 import { cn } from "@/features/shared/lib/utils";
+import { InputValidTick } from "@/features/shared/ui/InputValidTick";
 
 export type IconLabelInputProps = Omit<
   InputHTMLAttributes<HTMLInputElement>,
@@ -13,6 +14,7 @@ export type IconLabelInputProps = Omit<
   className?: string;
   inputClassName?: string;
   labelClassName?: string;
+  isValid?: boolean;
 };
 
 export const IconLabelInput = forwardRef<HTMLInputElement, IconLabelInputProps>(
@@ -23,6 +25,7 @@ export const IconLabelInput = forwardRef<HTMLInputElement, IconLabelInputProps>(
       className,
       inputClassName,
       labelClassName,
+      isValid = false,
       disabled,
       ...inputProps
     },
@@ -72,6 +75,8 @@ export const IconLabelInput = forwardRef<HTMLInputElement, IconLabelInputProps>(
           )}
           {...inputProps}
         />
+
+        <InputValidTick show={isValid} />
       </div>
     );
   },

@@ -9,7 +9,9 @@ import {
     type Path,
     type RegisterOptions,
 } from "react-hook-form";
+import { isControlledInputValid } from "@/features/shared/lib/inputValidation";
 import { cn } from "@/features/shared/lib/utils";
+import { InputValidTick } from "@/features/shared/ui/InputValidTick";
 
 type NativeInputProps = Omit<
     InputHTMLAttributes<HTMLInputElement>,
@@ -82,6 +84,11 @@ export default function FormTextInput<T extends FieldValues>({
     });
 
     const value = String(field.value ?? "");
+    const isValid = isControlledInputValid({
+        value,
+        fieldState,
+        required,
+    });
     const displayPlaceholder =
         showLabelInInput && showMandatory && required
             ? `${placeholder} *`
@@ -144,6 +151,8 @@ export default function FormTextInput<T extends FieldValues>({
                         )}
                     />
                 ) : null}
+
+                <InputValidTick show={isValid} />
             </div>
 
             {showLine ? <div className="mt-1 h-px w-full bg-[#DBBC59]" /> : null}
