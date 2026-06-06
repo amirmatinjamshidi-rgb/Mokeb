@@ -9,7 +9,7 @@ import {
     type Path,
     type RegisterOptions,
 } from "react-hook-form";
-import { cn } from "../lib/utils";
+import { cn } from "@/features/shared/lib/utils";
 
 type NativeInputProps = Omit<
     InputHTMLAttributes<HTMLInputElement>,
@@ -88,7 +88,7 @@ export default function FormTextInput<T extends FieldValues>({
             : placeholder;
 
     return (
-        <div className={cn("w-full max-w-[502px]", className)}>
+        <div className={cn("w-full min-w-0 max-w-full", className)}>
             {showLabel && label ? (
                 <label className="mb-1 block text-sm font-medium text-gray-700">
                     {label}
@@ -101,12 +101,12 @@ export default function FormTextInput<T extends FieldValues>({
             <div
                 dir="ltr"
                 className={cn(
-                    "flex h-[56px] w-full items-center gap-[10px] rounded-[12px] px-4",
+                    "flex h-[56px] w-full items-center gap-[10px] rounded-[12px] border border-gray-300 shadow-md shadow-gray-300 px-4",
                     "bg-white",
                     "transition-colors",
                     fieldState.error
-                        ? "ring-1 ring-red-500"
-                        : "focus-within:ring-1 focus-within:ring-[#DBBC59]",
+                        ? "border-red-500 ring-1 ring-red-500"
+                        : "focus-within:border-[#DBBC59] focus-within:ring-1 focus-within:ring-[#DBBC59]",
                     disabled ? "opacity-60" : "",
                 )}
             >
@@ -131,7 +131,7 @@ export default function FormTextInput<T extends FieldValues>({
                     placeholder={displayPlaceholder}
                     className={cn(
                         "h-full w-full bg-transparent outline-none",
-                        "text-right text-sm text-[#1F2937] placeholder:text-[#61756F]",
+                        "text-right text-sm text-gray-500 placeholder:text-gray-400",
                     )}
                     dir="rtl"
                 />

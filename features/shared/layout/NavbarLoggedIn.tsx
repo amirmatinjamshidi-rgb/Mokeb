@@ -1,17 +1,26 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Menu, X, ChevronDown } from "lucide-react";
-import { navItems } from "./Navbar";
+import { mainNavItems, ROUTES } from "@/features/shared/config/navigation";
+
+const userPanelHref = ROUTES.userPanel;
 
 const TRACKING_LINE_COLOR = "#DBBC59";
 
+function pathMatchesNav(href: string, pathname: string) {
+  if (href === ROUTES.home) {
+    return pathname === "/Home" || pathname === "/";
+  }
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
+
 function NavLink({ href, label }: { href: string; label: string }) {
   const pathname = usePathname();
-  const isActive = pathname === href || (href !== "/" && pathname.startsWith(href));
+  const isActive = pathMatchesNav(href, pathname);
 
   return (
     <Link
@@ -24,7 +33,7 @@ function NavLink({ href, label }: { href: string; label: string }) {
     >
       {label}
       <span
-        className={`absolute left-0 right-0 bottom-0 h-[2px] transition-opacity duration-300 ${
+        className={`absolute inset-x-0 bottom-0 h-[2px] transition-opacity duration-300 ${
           isActive ? "opacity-100" : "opacity-0 group-hover:opacity-100"
         }`}
         style={{ backgroundColor: TRACKING_LINE_COLOR }}
@@ -60,13 +69,13 @@ function NavbarLoggedIn({ user = { name: "کاربر", avatar: "/default-avatar.
     <nav className="w-full top-0 absolute z-50 bg-transparent">
       <div className="w-full mx-auto h-16 flex justify-between items-center px-6 text-white gap-4">
         <div className="hidden lg:flex items-center gap-10 order-1 flex-1 justify-end">
-          {navItems.map(({ href, label }) => (
+          {mainNavItems.map(({ href, label }) => (
             <NavLink key={href} href={href} label={label} />
           ))}
         </div>
 
         <div className="flex items-center shrink-0 order-2">
-          <Link href="/">
+          <Link href={ROUTES.home}>
             <Image
               alt="logo"
               src="/Logo.png"
@@ -90,7 +99,7 @@ function NavbarLoggedIn({ user = { name: "کاربر", avatar: "/default-avatar.
               />
             </button>
             {dropdownOpen && (
-              <div className="absolute top-full left-0 mt-2 py-2 bg-black/95 border border-white/10 rounded-lg shadow-xl min-w-[160px] z-50">
+              <div className="absolute start-0 top-full z-50 mt-2 min-w-[160px] rounded-lg border border-white/10 bg-black/95 py-2 shadow-xl">
                 {CONTACT_NUMBERS.map(({ display, value }) => (
                   <a
                     key={value}
@@ -104,7 +113,7 @@ function NavbarLoggedIn({ user = { name: "کاربر", avatar: "/default-avatar.
             )}
           </div>
           <Link
-            href="/UserPanel/UserAccount"
+            href={userPanelHref}
             className="hidden md:flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-white/10 transition-colors"
           >
             <Image
@@ -126,8 +135,8 @@ function NavbarLoggedIn({ user = { name: "کاربر", avatar: "/default-avatar.
       </div>
 
       {isOpen && (
-        <div className="lg:hidden absolute top-16 left-0 w-full bg-black border-t border-white/10 shadow-lg py-4 px-6 flex flex-col gap-4">
-          {navItems.map(({ href, label }) => (
+        <div className="lg:hidden absolute inset-x-0 top-14 flex w-full flex-col gap-4 border-t border-white/10 bg-black px-6 py-4 shadow-lg sm:top-16">
+          {mainNavItems.map(({ href, label }) => (
             <Link
               key={href}
               href={href}
@@ -138,7 +147,7 @@ function NavbarLoggedIn({ user = { name: "کاربر", avatar: "/default-avatar.
             </Link>
           ))}
           <Link
-            href="/UserPanel/UserAccount"
+            href={userPanelHref}
             onClick={() => setIsOpen(false)}
             className="flex items-center gap-2 py-2"
           >

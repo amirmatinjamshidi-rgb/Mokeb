@@ -1,9 +1,9 @@
-"use client";
+﻿"use client";
 
-import Button from "@/features/UI/button";
-import FormTextInput from "@/features/UI/FormTextInput";
+import Button from "@/features/shared/ui/button";
 import { PhoneCall } from "lucide-react";
 import { useForm } from "react-hook-form";
+import { IconLabelInput } from "@/features/shared/ui/IconLabelInput";
 
 type SubmitFormValues = {
   phone: string;
@@ -21,11 +21,11 @@ function Submit() {
   };
 
   return (
-    <div className="Gray-backGround mx-auto max-w-324 rounded-2xl px-4 py-3 min-h-39 shadow-lg shadow-gray-500/10">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div className="max-w-97.75 flex flex-col gap-1">
-          <h2 className="text-2xl font-bold">همراهی با موکب</h2>
-          <p className="text-base">
+    <div className="Gray-backGround mx-auto w-full min-h-37 rounded-2xl px-4 py-8 shadow-lg shadow-gray-300 sm:px-8 sm:py-10 md:px-12">
+      <div className="flex w-full flex-col items-stretch gap-6 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex min-w-0 flex-col gap-1 text-right">
+          <h2 className="text-xl font-bold sm:text-2xl">همراهی با موکب</h2>
+          <p className="text-sm sm:text-base">
             برای اطلاع از برنامه های موکب ، شماره تماس خود را وارد کنید.
           </p>
         </div>
@@ -33,40 +33,23 @@ function Submit() {
         <form
           onSubmit={handleSubmit(onSubmit)}
           noValidate
-          className="flex w-full md:w-auto min-w-0 items-start gap-2"
+          className="flex w-full min-w-0 flex-col gap-3 sm:max-w-md sm:flex-row sm:items-stretch sm:gap-2 md:max-w-lg"
         >
-          <FormTextInput<SubmitFormValues>
-            name="phone"
-            control={control}
-            className="flex-1 min-w-0"
+          <IconLabelInput
+            icon={<PhoneCall />}
+            inputClassName="text-right"
+            labelClassName="text-right"
             placeholder="شماره موبایل"
-            inputMode="tel"
-            maxLength={11}
-            rightIcon={PhoneCall}
-            rightIconClassName="rotate-[270deg]"
-            showLabel={false}
-            showMandatory
-            showLabelInInput
-            showIconR
-            showIconL={false}
-            showHelper={false}
-            showCounter={false}
-            rules={{
-              pattern: {
-                value: /^09\d{9}$/,
-                message: "شماره موبایل معتبر نیست",
-              },
-            }}
           />
 
           <Button
+            text="white"
             type="submit"
             color="warning"
-            radius="none"
+            radius="md"
             border="none"
-            size="twoxl"
             width="lg"
-            className="text-white shrink-0"
+            className="min-h-14 w-full shrink-0 text-base sm:w-auto sm:min-w-37"
           >
             عضویت
           </Button>
