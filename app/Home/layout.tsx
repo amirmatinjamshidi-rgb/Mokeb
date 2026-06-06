@@ -1,14 +1,7 @@
-import NavbarWrapper from "@/features/Layout/NavbarWrapper";
-
-export default function RootLayout({
+export default function HomeLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  return (
-    <html lang="fa" dir="rtl">
-      <NavbarWrapper />
-      {children}
-    </html>
-  );
+  return <>{children}</>;
 }
