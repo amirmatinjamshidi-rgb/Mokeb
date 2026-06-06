@@ -1,0 +1,38 @@
+import type { Accompany } from "@/features/user-panel/lib/accompanySchema";
+
+export const mockAccompanies: Accompany[] = [
+  {
+    id: 1,
+    fullName: "علی محمدی",
+    fatherName: "حسین",
+    gender: "male",
+    birthDate: "1370/05/12",
+    city: "تهران",
+    nationality: "iranian",
+    nationalCode: "1234567890",
+    passportNumber: "A12345678",
+    passportExpiry: "1408/01/01",
+    bloodType: "A+",
+    diseaseHistory: "",
+    mobile1: "09121234567",
+    mobile2: "09129876543",
+    relativePhone: "02144556677",
+  },
+  {
+    id: 2,
+    fullName: "زهرا کریمی",
+    fatherName: "محمد",
+    gender: "female",
+    birthDate: "1375/08/20",
+    city: "قم",
+    nationality: "iranian",
+    nationalCode: "0987654321",
+    passportNumber: "B87654321",
+    passportExpiry: "1407/06/15",
+    bloodType: "O+",
+    diseaseHistory: "",
+    mobile1: "09121112222",
+    mobile2: "",
+    relativePhone: "02133445566",
+  },
+];
