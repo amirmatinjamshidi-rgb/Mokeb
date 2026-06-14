@@ -147,3 +147,71 @@
     @apply bg-background text-foreground overflow-x-hidden;
   }
 }
+
+/* Shared panel sidebar (UserPanel, Boss, Admin use admin-kit SidebarNav) */
+.sidebar-nav-item {
+  --sidebar-nav-fill: transparent;
+  --sidebar-nav-scoop: 20px;
+  position: relative;
+  width: 100%;
+}
+
+.sidebar-nav-link {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  background: var(--sidebar-nav-fill);
+  border-radius: 0 9999px 9999px 0;
+  transition:
+    background-color 0.2s,
+    color 0.2s;
+}
+
+.sidebar-nav-link--active {
+  --sidebar-nav-fill: #ffffff;
+}
+
+.sidebar-nav-link:not(.sidebar-nav-link--active):hover,
+.sidebar-nav-link:not(.sidebar-nav-link--active):focus-visible {
+  --sidebar-nav-fill: rgb(255 255 255 / 0.15);
+}
+
+.sidebar-nav-link::before,
+.sidebar-nav-link::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  width: var(--sidebar-nav-scoop);
+  height: var(--sidebar-nav-scoop);
+  background: transparent;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.sidebar-nav-link--active::before,
+.sidebar-nav-link--active::after,
+.sidebar-nav-link:not(.sidebar-nav-link--active):hover::before,
+.sidebar-nav-link:not(.sidebar-nav-link--active):hover::after,
+.sidebar-nav-link:not(.sidebar-nav-link--active):focus-visible::before,
+.sidebar-nav-link:not(.sidebar-nav-link--active):focus-visible::after {
+  opacity: 1;
+}
+
+.sidebar-nav-link::before {
+  top: calc(var(--sidebar-nav-scoop) * -1);
+  border-bottom-left-radius: var(--sidebar-nav-scoop);
+  border-top-right-radius: var(--sidebar-nav-scoop);
+  box-shadow: calc(var(--sidebar-nav-scoop) * -0.55)
+    calc(var(--sidebar-nav-scoop) * 0.55) 0
+    calc(var(--sidebar-nav-scoop) * 0.55) var(--sidebar-nav-fill);
+}
+
+.sidebar-nav-link::after {
+  bottom: calc(var(--sidebar-nav-scoop) * -1);
+  border-top-left-radius: var(--sidebar-nav-scoop);
+  border-bottom-right-radius: var(--sidebar-nav-scoop);
+  box-shadow: calc(var(--sidebar-nav-scoop) * -0.55)
+    calc(var(--sidebar-nav-scoop) * -0.55) 0
+    calc(var(--sidebar-nav-scoop) * 0.55) var(--sidebar-nav-fill);
+}

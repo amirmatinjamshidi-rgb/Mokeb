@@ -1,0 +1,95 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-iransans-700);
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", "Courier New", monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-iransans-700), sans-serif;
+}
+
+
+.sidebar-nav-item {
+  --sidebar-nav-fill: transparent;
+  --sidebar-nav-scoop: 20px;
+  position: relative;
+  width: 100%;
+}
+
+.sidebar-nav-link {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  background: var(--sidebar-nav-fill);
+  border-radius: 0 9999px 9999px 0;
+  transition:
+    background-color 0.2s,
+    color 0.2s;
+}
+
+.sidebar-nav-link--active {
+  --sidebar-nav-fill: #ffffff;
+}
+
+.sidebar-nav-link:not(.sidebar-nav-link--active):hover,
+.sidebar-nav-link:not(.sidebar-nav-link--active):focus-visible {
+  --sidebar-nav-fill: rgb(255 255 255 / 0.15);
+}
+
+.sidebar-nav-link::before,
+.sidebar-nav-link::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  width: var(--sidebar-nav-scoop);
+  height: var(--sidebar-nav-scoop);
+  background: transparent;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.sidebar-nav-link--active::before,
+.sidebar-nav-link--active::after,
+.sidebar-nav-link:not(.sidebar-nav-link--active):hover::before,
+.sidebar-nav-link:not(.sidebar-nav-link--active):hover::after,
+.sidebar-nav-link:not(.sidebar-nav-link--active):focus-visible::before,
+.sidebar-nav-link:not(.sidebar-nav-link--active):focus-visible::after {
+  opacity: 1;
+}
+
+.sidebar-nav-link::before {
+  top: calc(var(--sidebar-nav-scoop) * -1);
+  border-bottom-left-radius: var(--sidebar-nav-scoop);
+  border-top-right-radius: var(--sidebar-nav-scoop);
+  box-shadow: calc(var(--sidebar-nav-scoop) * -0.55)
+    calc(var(--sidebar-nav-scoop) * 0.55) 0
+    calc(var(--sidebar-nav-scoop) * 0.55) var(--sidebar-nav-fill);
+}
+
+.sidebar-nav-link::after {
+  bottom: calc(var(--sidebar-nav-scoop) * -1);
+  border-top-left-radius: var(--sidebar-nav-scoop);
+  border-bottom-right-radius: var(--sidebar-nav-scoop);
+  box-shadow: calc(var(--sidebar-nav-scoop) * -0.55)
+    calc(var(--sidebar-nav-scoop) * -0.55) 0
+    calc(var(--sidebar-nav-scoop) * 0.55) var(--sidebar-nav-fill);
+}

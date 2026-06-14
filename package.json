@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "node --max-old-space-size=12384 node_modules/next/dist/bin/next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint"
@@ -19,6 +19,8 @@
     "@tanstack/react-query-devtools": "^5.91.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "embla-carousel-react": "^8.6.0",
+    "iconsax-reactjs": "^0.0.8",
     "lucide-react": "^0.575.0",
     "next": "^16.0.10",
     "radix-ui": "^1.4.3",
@@ -28,6 +30,7 @@
     "react-element-popper": "^2.1.7",
     "react-hook-form": "^7.68.0",
     "react-multi-date-picker": "^4.5.2",
+    "recharts": "^3.8.1",
     "tailwind-merge": "^3.5.0",
     "zod": "^4.1.13",
     "zustand": "^5.0.9"
