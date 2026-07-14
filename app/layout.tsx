@@ -23,7 +23,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="fa" dir="rtl">
-      <body className={`  min-h-dvh bg-background font-sans antialiased`}>
+      <body
+        className="min-h-dvh bg-background font-sans antialiased"
+        suppressHydrationWarning
+      >
         <QueryProvider>
           <AppProviders>{children}</AppProviders>
         </QueryProvider>
