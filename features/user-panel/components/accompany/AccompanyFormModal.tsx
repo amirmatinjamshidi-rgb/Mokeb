@@ -2,6 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { X } from "lucide-react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import {
   profileDefaultValues,
@@ -13,10 +14,11 @@ import { ProfileFormFields } from "../profile/ProfileFormFields";
 type Props = {
   open: boolean;
   onClose: () => void;
-  onSubmit: (values: ProfileFormValues) => void;
+  onSubmit: (values: ProfileFormValues) => void | Promise<void>;
 };
 
 export function AccompanyFormModal({ open, onClose, onSubmit }: Props) {
+  const [submitting, setSubmitting] = useState(false);
   const { control, handleSubmit, setValue, watch, reset } =
     useForm<ProfileFormValues>({
       resolver: zodResolver(profileSchema),
@@ -25,10 +27,15 @@ export function AccompanyFormModal({ open, onClose, onSubmit }: Props) {
 
   if (!open) return null;
 
-  const submit = (data: ProfileFormValues) => {
-    onSubmit(data);
-    reset(profileDefaultValues);
-    onClose();
+  const submit = async (data: ProfileFormValues) => {
+    setSubmitting(true);
+    try {
+      await onSubmit(data);
+      reset(profileDefaultValues);
+      onClose();
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -44,6 +51,7 @@ export function AccompanyFormModal({ open, onClose, onSubmit }: Props) {
             onClick={onClose}
             className="rounded-lg p-1 text-gray-500 hover:bg-gray-100"
             aria-label="بستن"
+            disabled={submitting}
           >
             <X className="size-5" />
           </button>
@@ -58,22 +66,24 @@ export function AccompanyFormModal({ open, onClose, onSubmit }: Props) {
             control={control}
             setValue={setValue}
             watch={watch}
-            disabled={false}
+            disabled={submitting}
           />
 
           <div className="flex justify-end gap-3">
             <button
               type="button"
               onClick={onClose}
+              disabled={submitting}
               className="rounded-xl border border-gray-300 px-6 py-2 text-sm font-medium text-gray-500"
             >
               انصراف
             </button>
             <button
               type="submit"
-              className="rounded-xl bg-[#175E47] px-6 py-2 text-sm font-semibold text-white hover:bg-[#1F7E5F]"
+              disabled={submitting}
+              className="rounded-xl bg-[#175E47] px-6 py-2 text-sm font-semibold text-white hover:bg-[#1F7E5F] disabled:opacity-60"
             >
-              ثبت
+              {submitting ? "در حال ثبت…" : "ثبت"}
             </button>
           </div>
         </form>

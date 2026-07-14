@@ -1,15 +1,24 @@
 ﻿"use client";
 
 import { useMemo, useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Eye, Inbox, Search, UserPlus, Users, XCircle } from "lucide-react";
 import { FloatingLabelSearch } from "@/features/shared/ui/FloatingLabelSearch";
-import { Table, type Column } from "@/features/shared/table/MainTable";
 import {
+  Table,
   TablePagination,
+  TableRowActionsMenu,
   usePagination,
-} from "@/features/shared/table/TablePagination";
-import { TableRowActionsMenu } from "@/features/shared/table/TableRowActionsMenu";
+  type Column,
+} from "@admin-kit/index";
 import { toPersianDigits } from "@/features/shared/lib/format";
+import { useIsAuthenticated } from "@/features/auth/store/useAuthStore";
+import {
+  queryKeys,
+  useAddCompanion,
+  useCompanions,
+  useRemoveCompanion,
+} from "@/features/user-panel/api/hooks";
 import type { ProfileFormValues } from "../../lib/profileSchema";
 import {
   genderLabel,
@@ -19,6 +28,8 @@ import {
 import { AccompanyFormModal } from "./AccompanyFormModal";
 import { AccompanyViewModal } from "./AccompanyViewModal";
 import type { ReservationFilterValues } from "../reservations/ReservationFilters";
+import { individualApi } from "@/lib/api";
+import { useAuthStore } from "@/features/auth/store/useAuthStore";
 
 function persianCell(value: string | number) {
   return toPersianDigits(value);
@@ -91,11 +102,14 @@ function buildColumns(handlers: {
 }
 
 type Props = {
-  initialAccompanies: Accompany[];
+  /** Fallback when user is not logged in (dev/demo). */
+  initialAccompanies?: Accompany[];
 };
 
-export function MyAccompanyContent({ initialAccompanies }: Props) {
-  const [accompanies, setAccompanies] = useState(initialAccompanies);
+export function MyAccompanyContent({ initialAccompanies = [] }: Props) {
+  const isAuthenticated = useIsAuthenticated();
+  const principalId = useAuthStore((s) => s.principalId);
+  const queryClient = useQueryClient();
   const [filters, setFilters] = useState<ReservationFilterValues>({
     search: "",
     status: "all",
@@ -103,9 +117,19 @@ export function MyAccompanyContent({ initialAccompanies }: Props) {
   });
   const [formOpen, setFormOpen] = useState(false);
   const [viewTarget, setViewTarget] = useState<Accompany | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const { data: apiCompanions = [], isLoading, error } = useCompanions(
+    filters.search,
+  );
+  const addCompanion = useAddCompanion();
+  const removeCompanion = useRemoveCompanion();
+
+  const accompanies = isAuthenticated ? apiCompanions : initialAccompanies;
+
   const filtered = useMemo(() => {
+    if (isAuthenticated) return accompanies;
     const query = filters.search.trim().toLowerCase();
     return accompanies.filter((row) => {
       if (!query) return true;
@@ -118,7 +142,7 @@ export function MyAccompanyContent({ initialAccompanies }: Props) {
         row.fullName.includes(query)
       );
     });
-  }, [accompanies, filters.search]);
+  }, [accompanies, filters.search, isAuthenticated]);
 
   const {
     currentPage,
@@ -134,16 +158,47 @@ export function MyAccompanyContent({ initialAccompanies }: Props) {
     radif: (currentPage - 1) * pageSize + index + 1,
   }));
 
-  const handleAdd = (values: ProfileFormValues) => {
-    setAccompanies((prev) => [...prev, { ...values, id: Date.now() }]);
+  const handleAdd = async (values: ProfileFormValues) => {
+    setActionError(null);
+    if (!isAuthenticated) {
+      setActionError("برای افزودن همسفر ابتدا وارد شوید.");
+      throw new Error("برای افزودن همسفر ابتدا وارد شوید.");
+    }
+    try {
+      await addCompanion.mutateAsync(values);
+      setFormOpen(false);
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : "افزودن همسفر ناموفق بود.");
+      throw err;
+    }
   };
 
-  const handleDelete = (row: Accompany) => {
-    setAccompanies((prev) => prev.filter((a) => a.id !== row.id));
+  const handleDelete = async (row: Accompany) => {
+    setActionError(null);
+    if (!isAuthenticated) return;
+    try {
+      await removeCompanion.mutateAsync(row.id);
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : "حذف همسفر ناموفق بود.");
+    }
   };
 
-  const handleExcelUpload = (file: File) => {
-    console.log("excel upload", file.name);
+  const handleExcelUpload = async (file: File) => {
+    setActionError(null);
+    if (!principalId) {
+      setActionError("برای بارگذاری اکسل ابتدا وارد شوید.");
+      return;
+    }
+    try {
+      await individualApi.uploadCompanionsExcel(principalId, file);
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.companions(principalId),
+      });
+    } catch (err) {
+      setActionError(
+        err instanceof Error ? err.message : "بارگذاری فایل ناموفق بود.",
+      );
+    }
   };
 
   const columns = buildColumns({
@@ -159,6 +214,18 @@ export function MyAccompanyContent({ initialAccompanies }: Props) {
       <h1 className="flex w-full items-center gap-2 text-2xl font-bold text-gray-500 sm:text-3xl">
         <Users className="size-7 sm:size-8" /> همراهان من
       </h1>
+
+      {isLoading ? (
+        <p className="text-sm text-gray-500">در حال بارگذاری…</p>
+      ) : null}
+      {error ? (
+        <p className="text-sm text-red-500">
+          {error instanceof Error ? error.message : "خطا در دریافت لیست همسفران"}
+        </p>
+      ) : null}
+      {actionError ? (
+        <p className="text-sm text-red-500">{actionError}</p>
+      ) : null}
 
       <div className="flex w-full flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <FloatingLabelSearch
