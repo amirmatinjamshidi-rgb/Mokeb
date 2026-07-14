@@ -7,6 +7,7 @@ import { cn } from "@/features/shared/lib/utils";
 
 export type ReservationStatusFilter =
   | "all"
+  | "در انتظار تایید"
   | "رزرو فعال"
   | "لغو شده"
   | "عدم حضور";
@@ -86,6 +87,7 @@ export function ReservationFilters({ values, onChange, className }: Props) {
         }
       >
         <option value="all">همه وضعیت‌ها</option>
+        <option value="در انتظار تایید">در انتظار تایید</option>
         <option value="رزرو فعال">رزرو فعال</option>
         <option value="لغو شده">لغو شده</option>
         <option value="عدم حضور">عدم حضور</option>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import {
@@ -9,18 +9,45 @@ import {
   type ProfileFormValues,
 } from "../../lib/profileSchema";
 import { ProfileFormFields } from "./ProfileFormFields";
+import {
+  useIndividualProfile,
+  useUpdateProfile,
+} from "@/features/user-panel/api/hooks";
+import { useIsAuthenticated } from "@/features/auth/store/useAuthStore";
 
 export function UserProfileForm() {
   const [isEditing, setIsEditing] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const isAuthenticated = useIsAuthenticated();
+  const { data: profile, isLoading, error } = useIndividualProfile();
+  const updateProfile = useUpdateProfile();
 
-  const { control, handleSubmit, setValue, watch } = useForm<ProfileFormValues>({
-    resolver: zodResolver(profileSchema),
-    defaultValues: profileDefaultValues,
-  });
+  const { control, handleSubmit, setValue, watch, reset } =
+    useForm<ProfileFormValues>({
+      resolver: zodResolver(profileSchema),
+      defaultValues: profileDefaultValues,
+    });
 
-  const onSubmit = (data: ProfileFormValues) => {
-    console.log(data);
-    setIsEditing(false);
+  useEffect(() => {
+    if (profile) {
+      reset(profile);
+    }
+  }, [profile, reset]);
+
+  const onSubmit = async (data: ProfileFormValues) => {
+    setSaveError(null);
+    if (!isAuthenticated) {
+      setSaveError("برای ذخیره پروفایل ابتدا وارد شوید.");
+      return;
+    }
+    try {
+      await updateProfile.mutateAsync(data);
+      setIsEditing(false);
+    } catch (err) {
+      setSaveError(
+        err instanceof Error ? err.message : "ذخیره پروفایل ناموفق بود.",
+      );
+    }
   };
 
   const handleEditToggle = () => {
@@ -38,11 +65,21 @@ export function UserProfileForm() {
       dir="rtl"
       noValidate
     >
+      {isLoading ? (
+        <p className="text-sm text-gray-500">در حال بارگذاری پروفایل…</p>
+      ) : null}
+      {error ? (
+        <p className="text-sm text-red-500">
+          {error instanceof Error ? error.message : "خطا در دریافت پروفایل"}
+        </p>
+      ) : null}
+      {saveError ? <p className="text-sm text-red-500">{saveError}</p> : null}
+
       <ProfileFormFields
         control={control}
         setValue={setValue}
         watch={watch}
-        disabled={!isEditing}
+        disabled={!isEditing || updateProfile.isPending}
         showEditButton
         isEditing={isEditing}
         onEditToggle={handleEditToggle}

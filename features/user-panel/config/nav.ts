@@ -8,6 +8,9 @@
 import { ROUTES } from "@/features/shared/config/navigation";
 import type { NavItem } from "../types";
 
+/** Sidebar action — handled by panel shell (not a route). */
+export const LOGOUT_NAV_HREF = "#logout" as const;
+
 export const USER_PANEL_NAV: NavItem[] = [
   {
     href: `${ROUTES.userPanel}/profile`,
@@ -25,7 +28,12 @@ export const USER_PANEL_NAV: NavItem[] = [
     icon: Wallet,
   },
   {
-    href: "/Home",
+    href: `${ROUTES.userPanel}/settings`,
+    label: "تنظیمات",
+    icon: Settings,
+  },
+  {
+    href: LOGOUT_NAV_HREF,
     label: "خروج از پنل",
     icon: LogOut,
   },
