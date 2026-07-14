@@ -34,7 +34,7 @@ export default function ReserveStart({
 
   buttonColor = "white",
   buttonSize = "twoxl",
-  buttonWidth = "xl",
+  buttonWidth = "g240",
 
   customButton,
   className,
@@ -78,7 +78,7 @@ export default function ReserveStart({
               radius="md"
               border="none"
               onClick={onButtonClick}
-              className="w-full transition-all duration-300 ease-out sm:w-auto"
+              className="transition-all duration-300 ease-out"
             >
               {buttonText}
             </Button>

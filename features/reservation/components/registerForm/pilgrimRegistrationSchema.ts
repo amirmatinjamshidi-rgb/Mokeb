@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { BLOOD_TYPES } from "@/features/shared/constants/bloodTypes";
+
 const required = (label: string) =>
   z.string().trim().min(1, `${label} الزامی است`);
 
@@ -17,8 +19,8 @@ export const pilgrimSchema = z.object({
   mobile1: required("موبایل ۱"),
   mobile2: required("موبایل ۲"),
   relativePhone: required("تلفن آشنا"),
-  bloodType: required("گروه خونی"),
-  diseaseHistory: required("سابقه بیماری"),
+  bloodType: z.enum(BLOOD_TYPES, { message: "گروه خونی را انتخاب کنید" }),
+  diseaseHistory: z.string(),
 });
 
 export type PilgrimFormValues = z.infer<typeof pilgrimSchema>;
@@ -52,7 +54,7 @@ export function emptyPilgrim(): PilgrimFormValues {
     mobile1: "",
     mobile2: "",
     relativePhone: "",
-    bloodType: "",
+    bloodType: "O+",
     diseaseHistory: "",
   };
 }
