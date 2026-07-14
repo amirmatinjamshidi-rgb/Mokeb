@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useState, type ReactNode } from "react";
+import { type ReactNode } from "react";
 import {
   FormControl,
   FormControlLabel,
@@ -9,13 +9,10 @@ import {
   Radio,
   RadioGroup,
   Select,
-  TextField,
 } from "@mui/material";
 import {
   BookOpen,
-  Calendar,
   ContactRound,
-  Droplets,
   Edit,
   Globe,
   HeartPulse,
@@ -24,17 +21,15 @@ import {
   ShieldCheck,
   User,
 } from "lucide-react";
-import DateObject from "react-date-object";
 import {
   Controller,
   type Control,
   type UseFormSetValue,
   type UseFormWatch,
 } from "react-hook-form";
-import DatePicker from "react-multi-date-picker";
-import persian from "react-date-object/calendars/persian";
-import persian_fa from "react-date-object/locales/persian_fa";
 import FormTextInput from "@/features/shared/ui/FormTextInput";
+import { FormBloodTypeSelect } from "@/features/shared/ui/BloodTypeSelect";
+import { PersianDateField } from "@/features/shared/ui/PersianDateField";
 import { cn } from "@/features/shared/lib/utils";
 import { colors, CONTROL_H } from "@/features/reservation/tokens";
 import type { ProfileFormValues } from "../../lib/profileSchema";
@@ -61,39 +56,20 @@ const selectSx = {
   },
 };
 
-const dateFieldSx = {
-  "& .MuiOutlinedInput-root": {
-    height: CONTROL_H,
-    borderRadius: "12px",
-    backgroundColor: colors.backgroundW,
-    "& fieldset": { borderColor: "#D1D5DB" },
-    "&:hover fieldset": { borderColor: colors.goldLine },
-    "&.Mui-focused fieldset": {
-      borderColor: colors.goldLine,
-      borderWidth: "1px",
-    },
-    "& input": {
-      textAlign: "right",
-      fontSize: 14,
-      color: colors.neutral08,
-    },
-  },
-};
-
 function SectionDivider() {
   return <div className="h-px w-full border border-[#CBA52C]" />;
 }
 
 function FormRow({ children }: { children: ReactNode }) {
   return (
-    <div className="grid w-full grid-cols-1 gap-[10px] md:grid-cols-2">
+    <div className="grid w-full grid-cols-1 gap-2.5 md:grid-cols-2">
       {children}
     </div>
   );
 }
 
 function FieldCell({ children }: { children?: ReactNode }) {
-  return <div className="w-full min-w-0 max-w-[502px]">{children}</div>;
+  return <div className="w-full min-w-0 max-w-125.5">{children}</div>;
 }
 
 type SectionHeaderProps = {
@@ -122,65 +98,6 @@ function SectionHeader({
         </button>
       ) : null}
     </div>
-  );
-}
-
-function ProfileDateField({
-  placeholder,
-  value,
-  onChange,
-  error,
-  disabled,
-}: {
-  placeholder: string;
-  value: string;
-  onChange: (v: string) => void;
-  error?: string;
-  disabled?: boolean;
-}) {
-  const [pickerValue, setPickerValue] = useState<DateObject | null>(() =>
-    value ? new DateObject({ date: value, calendar: persian }) : null,
-  );
-
-  return (
-    <DatePicker
-      calendar={persian}
-      locale={persian_fa}
-      calendarPosition="bottom-right"
-      disabled={disabled}
-      value={pickerValue}
-      onChange={(date) => {
-        const next = (date as DateObject | null) ?? null;
-        setPickerValue(next);
-        onChange(next ? next.format("YYYY/MM/DD") : "");
-      }}
-      render={(_value, openCalendar) => (
-        <TextField
-          value={value}
-          onClick={disabled ? undefined : openCalendar}
-          placeholder={placeholder}
-          error={!!error}
-          helperText={error}
-          dir="rtl"
-          fullWidth
-          disabled={disabled}
-          InputProps={{
-            readOnly: true,
-            endAdornment: (
-              <Calendar
-                size={20}
-                onClick={disabled ? undefined : openCalendar}
-                className={cn(
-                  "shrink-0 text-gray-400",
-                  disabled ? "cursor-default" : "cursor-pointer",
-                )}
-              />
-            ),
-          }}
-          sx={dateFieldSx}
-        />
-      )}
-    />
   );
 }
 
@@ -286,7 +203,7 @@ export function ProfileFormFields({
               name="birthDate"
               control={control}
               render={({ fieldState }) => (
-                <ProfileDateField
+                <PersianDateField
                   placeholder="تاریخ تولد *"
                   value={birthDate}
                   onChange={(v) =>
@@ -320,7 +237,11 @@ export function ProfileFormFields({
               name="nationality"
               control={control}
               render={({ field, fieldState }) => (
-                <FormControl fullWidth error={!!fieldState.error} disabled={disabled}>
+                <FormControl
+                  fullWidth
+                  error={!!fieldState.error}
+                  disabled={disabled}
+                >
                   <div className="relative">
                     <Globe className="pointer-events-none absolute end-4 top-1/2 z-10 size-5 -translate-y-1/2 text-gray-400" />
                     <Select
@@ -378,7 +299,7 @@ export function ProfileFormFields({
               name="passportExpiry"
               control={control}
               render={({ fieldState }) => (
-                <ProfileDateField
+                <PersianDateField
                   placeholder="تاریخ انقضای پاسپورت *"
                   value={passportExpiry}
                   onChange={(v) =>
@@ -399,12 +320,11 @@ export function ProfileFormFields({
         <SectionHeader title="اطلاعات سلامت" />
         <FormRow>
           <FieldCell>
-            <FormTextInput
+            <FormBloodTypeSelect
               name="bloodType"
               control={control}
-              placeholder="گروه خونی"
-              rightIcon={Droplets}
               disabled={disabled}
+              allowEmpty
             />
           </FieldCell>
           <FieldCell>

@@ -3,40 +3,46 @@
 import { useEffect, useMemo, useState } from "react";
 import { Download, Eye, ReceiptText, XCircle } from "lucide-react";
 import { cn } from "@/features/shared/lib/utils";
-import { Table, type Column } from "@/features/shared/table/MainTable";
 import {
+  Table,
   TablePagination,
+  TableRowActionsMenu,
   usePagination,
-} from "@/features/shared/table/TablePagination";
-import { TableRowActionsMenu } from "@/features/shared/table/TableRowActionsMenu";
+  type Column,
+} from "@admin-kit/index";
 import { toPersianDigits } from "@/features/shared/lib/format";
+import { useIsAuthenticated } from "@/features/auth/store/useAuthStore";
+import { useIndividualRequests } from "@/features/user-panel/api/hooks";
+import { useDownloadRequestPdf } from "@admin-kit/api/hooks";
+import type { RoomReservationList, ReservationStatus } from "@/lib/api/mappers";
 import {
   ReservationFilters,
   type ReservationFilterValues,
 } from "./ReservationFilters";
-export type ReservationStatus = "رزرو فعال" | "لغو شده" | "عدم حضور";
 
-export type RoomReservationList = {
-  id: number;
-  radif: number;
-  reservationCode: string;
-  checkIn: string;
-  checkOut: string;
-  companionsCount: number;
-  status: ReservationStatus;
-};
+export type { RoomReservationList, ReservationStatus };
 
 function persianCell(value: string | number) {
   return toPersianDigits(value);
 }
 
 function StatusBadge({ status }: { status: ReservationStatus }) {
-  const colorClass =
-    status === "رزرو فعال"
-      ? "text-[#279F78]"
-      : status === "لغو شده"
-        ? "text-[#D22B23]"
-        : "text-gray-400";
+  const colorClass = (() => {
+    switch (status) {
+      case "رزرو فعال":
+        return "text-[#279F78]";
+      case "در انتظار تایید":
+        return "text-[#C9A227]";
+      case "لغو شده":
+        return "text-[#D22B23]";
+      case "عدم حضور":
+        return "text-gray-400";
+      default: {
+        const _exhaustive: never = status;
+        return _exhaustive;
+      }
+    }
+  })();
 
   return <span className={cn("font-medium", colorClass)}>{status}</span>;
 }
@@ -74,8 +80,14 @@ function buildColumns(
       cell: (row) => persianCell(row.checkOut),
     },
     {
+      key: "supervisorName",
+      header: "سرپرست",
+      colClassName: "text-center",
+      cell: (row) => row.supervisorName,
+    },
+    {
       key: "companionsCount",
-      header: "تعداد همراهان",
+      header: "تعداد زائران",
       colClassName: "text-center",
       cell: (row) => `${persianCell(row.companionsCount)} نفر`,
     },
@@ -116,10 +128,14 @@ function buildColumns(
 }
 
 type Props = {
-  reservations: RoomReservationList[];
+  /** Fallback demo data when not logged in. */
+  reservations?: RoomReservationList[];
 };
 
-export function MyReservationsContent({ reservations }: Props) {
+export function MyReservationsContent({ reservations = [] }: Props) {
+  const isAuthenticated = useIsAuthenticated();
+  const { data: apiReservations = [], isLoading, error } = useIndividualRequests();
+  const sourceReservations = isAuthenticated ? apiReservations : reservations;
   const [filters, setFilters] = useState<ReservationFilterValues>({
     search: "",
     status: "all",
@@ -128,7 +144,7 @@ export function MyReservationsContent({ reservations }: Props) {
 
   const filteredReservations = useMemo(() => {
     const query = filters.search.trim().toLowerCase();
-    let rows = reservations.filter((row) => {
+    let rows = sourceReservations.filter((row) => {
       const matchesSearch =
         !query || row.reservationCode.toLowerCase().includes(query);
 
@@ -144,7 +160,7 @@ export function MyReservationsContent({ reservations }: Props) {
     });
 
     return rows;
-  }, [filters, reservations]);
+  }, [filters, sourceReservations]);
 
   const {
     currentPage,
@@ -164,10 +180,37 @@ export function MyReservationsContent({ reservations }: Props) {
     radif: (currentPage - 1) * pageSize + index + 1,
   }));
 
+  const downloadPdf = useDownloadRequestPdf();
+  const [viewTarget, setViewTarget] = useState<RoomReservationList | null>(null);
+  const [actionMessage, setActionMessage] = useState<string | null>(null);
+
   const columns = buildColumns({
-    onView: (row) => console.log("view", row.id),
-    onDownload: (row) => console.log("download", row.id),
-    onCancel: (row) => console.log("cancel", row.id),
+    onView: (row) => {
+      setViewTarget(row);
+      setActionMessage(null);
+    },
+    onDownload: async (row) => {
+      setActionMessage(null);
+      const requestId = row._apiId || String(row.id);
+      try {
+        const blob = await downloadPdf.mutateAsync(requestId);
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `reservation-${row.reservationCode || requestId}.pdf`;
+        a.click();
+        URL.revokeObjectURL(url);
+      } catch (err) {
+        setActionMessage(
+          err instanceof Error ? err.message : "دانلود PDF ناموفق بود.",
+        );
+      }
+    },
+    onCancel: (row) => {
+      setActionMessage(
+        `لغو رزرو «${row.reservationCode || row.id}» از سمت بک‌اند پشتیبانی نشده؛ با پشتیبانی موکب تماس بگیرید.`,
+      );
+    },
   });
 
   return (
@@ -175,6 +218,43 @@ export function MyReservationsContent({ reservations }: Props) {
       <h1 className="flex w-full items-center gap-2 text-2xl font-bold text-gray-500 sm:text-3xl">
         <ReceiptText className="size-7 sm:size-8" /> رزروهای من
       </h1>
+
+      {isLoading ? (
+        <p className="text-sm text-gray-500">در حال بارگذاری…</p>
+      ) : null}
+      {error ? (
+        <p className="text-sm text-red-500">
+          {error instanceof Error ? error.message : "خطا در دریافت رزروها"}
+        </p>
+      ) : null}
+      {actionMessage ? (
+        <p className="text-sm text-[#175E47]">{actionMessage}</p>
+      ) : null}
+      {viewTarget ? (
+        <div
+          className="rounded-2xl border border-gray-100 bg-white p-4 text-sm text-gray-700 shadow-sm"
+          dir="rtl"
+        >
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <p className="font-semibold text-[#175E47]">جزئیات رزرو</p>
+            <button
+              type="button"
+              className="text-xs text-gray-500 underline"
+              onClick={() => setViewTarget(null)}
+            >
+              بستن
+            </button>
+          </div>
+          <ul className="grid gap-2 sm:grid-cols-2">
+            <li>کد: {toPersianDigits(viewTarget.reservationCode || "—")}</li>
+            <li>وضعیت: {viewTarget.status}</li>
+            <li>ورود: {toPersianDigits(viewTarget.checkIn || "—")}</li>
+            <li>خروج: {toPersianDigits(viewTarget.checkOut || "—")}</li>
+            <li>مرد: {toPersianDigits(viewTarget.maleCount)}</li>
+            <li>زن: {toPersianDigits(viewTarget.femaleCount)}</li>
+          </ul>
+        </div>
+      ) : null}
 
       <ReservationFilters values={filters} onChange={setFilters} />
 
