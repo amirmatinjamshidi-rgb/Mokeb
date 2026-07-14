@@ -1,10 +1,12 @@
 ﻿"use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Button from "@/features/shared/ui/button";
 import { cn } from "@/features/shared/lib/utils";
+import { useReserveRoom } from "@/features/user-panel/api/hooks";
+import { pilgrimToTravelerDto } from "@/lib/api/mappers";
 import { useReservationCapacityStore } from "../store/useReservationCapacityStore";
 import { SiteReservationContentRow } from "../layouts/SiteReservationLayout";
 import PilgrimInfoForm from "./registerForm/PilgrimInfoForm";
@@ -35,6 +37,8 @@ export function GuestInfoSection({ className }: Props) {
   const completeGuestRegistration = useReservationCapacityStore(
     (s) => s.completeGuestRegistration,
   );
+  const reserveRoom = useReserveRoom();
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const schema = useMemo(() => pilgrimRegistrationSchema(guests), [guests]);
 
@@ -54,17 +58,51 @@ export function GuestInfoSection({ className }: Props) {
   const maleCount = countGender(watchedPilgrims, "male");
   const femaleCount = countGender(watchedPilgrims, "female");
 
-  const onSubmit = (data: RegistrationFormValues) => {
+  const onSubmit = async (data: RegistrationFormValues) => {
     const p0 = data.pilgrims[0];
     const supervisorName =
       [p0?.firstName, p0?.lastName].filter(Boolean).join(" ").trim() || "—";
-    completeGuestRegistration({
-      maleCount,
-      femaleCount,
-      supervisorName,
-      reserveCode: "TRK-9876",
-      pilgrims: data.pilgrims,
-    });
+    setSubmitError(null);
+
+    const travelers = data.pilgrims.map(pilgrimToTravelerDto);
+
+    let reserveCode = `TRK-${Date.now().toString().slice(-6)}`;
+    let submittedRequestId: string | null = null;
+    try {
+      const result = await reserveRoom.mutateAsync({
+        dateOfEntrance: entryDate,
+        dateOfExit: exitDate,
+        maleAmount: maleCount,
+        femaleAmount: femaleCount,
+        travelers,
+      });
+      if (typeof result === "string" && result.trim()) {
+        submittedRequestId = result.trim();
+      } else if (result && typeof result === "object") {
+        const r = result as Record<string, unknown>;
+        const id = r.requestId ?? r.RequestId ?? r.id ?? r.Id;
+        if (id) submittedRequestId = String(id);
+      }
+      if (submittedRequestId) {
+        reserveCode = submittedRequestId.slice(0, 8).toUpperCase();
+      }
+    } catch (err) {
+      setSubmitError(
+        err instanceof Error ? err.message : "ثبت رزرو ناموفق بود.",
+      );
+      return;
+    }
+
+    completeGuestRegistration(
+      {
+        maleCount,
+        femaleCount,
+        supervisorName,
+        reserveCode,
+        pilgrims: data.pilgrims,
+      },
+      submittedRequestId,
+    );
   };
 
   return (
@@ -96,7 +134,10 @@ export function GuestInfoSection({ className }: Props) {
             />
           </div>
 
-          <div className="mt-8 flex justify-stretch pt-2 sm:justify-end">
+          <div className="mt-8 flex flex-col gap-2 justify-stretch pt-2 sm:justify-end">
+            {submitError ? (
+              <p className="text-sm text-red-500">{submitError}</p>
+            ) : null}
             <Button
               type="submit"
               color="darkGreen"
@@ -106,8 +147,9 @@ export function GuestInfoSection({ className }: Props) {
               size="twoxl"
               width="xl"
               className="w-full min-w-0 font-semibold sm:w-auto sm:min-w-43"
+              disabled={reserveRoom.isPending}
             >
-              تایید و ادامه
+              {reserveRoom.isPending ? "در حال ثبت…" : "تایید و ادامه"}
             </Button>
           </div>
         </form>

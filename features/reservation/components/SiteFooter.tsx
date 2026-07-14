@@ -120,7 +120,8 @@ export function SiteFooter({ className }: Props) {
               alt="موکب"
               width={56}
               height={56}
-              className="object-contain"
+              className="h-auto w-auto object-contain"
+              style={{ width: "auto", height: "auto" }}
             />
             <p className="max-w-xs text-right text-sm leading-6 text-white/90">
               بیش از نه سال همراهی با زائران امیرالمومنین (ع)

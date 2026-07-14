@@ -16,7 +16,6 @@ type Props = {
   className?: string;
 };
 
-/** Horizontal 3-step progress — min height 76px (Figma). */
 export function ReservationStepper({ activeStep, className }: Props) {
   return (
     <div
