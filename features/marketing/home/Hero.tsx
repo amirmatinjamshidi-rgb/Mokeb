@@ -3,9 +3,10 @@
 import Link from "next/link";
 import Button from "@/features/shared/ui/button";
 import Image from "next/image";
-import Navbar from "@/features/shared/layout/Navbar";
-import { ROUTES } from "@/features/shared/config/navigation";
+import Navbar from "@/features/site/layout/Navbar";
 import { colors, HERO_H_MOBILE } from "@/features/reservation/tokens";
+import { BOSS_ADD_KARVAN_PATH } from "@/features/auth/lib/panelRouting";
+import { ROUTES } from "@/features/shared/config/navigation";
 
 const lanternClass = "pointer-events-none absolute flex flex-col items-center";
 
@@ -21,6 +22,7 @@ export default function Hero() {
           alt=""
           fill
           priority
+          loading="eager"
           className="object-cover object-center"
           sizes="(max-width: 768px) 100vw, 1440px"
         />
@@ -80,16 +82,21 @@ export default function Hero() {
                   رزرو عمومی
                 </Button>
               </Link>
-              <Button
-                color="warning"
-                radius="none"
-                border="none"
-                size="xl"
-                width="lg"
-                className="h-11ull shrink-0 text-white sm:w-57.75"
+              <Link
+                href={BOSS_ADD_KARVAN_PATH}
+                className="inline-flex w-full shrink-0 sm:w-57.75"
               >
-                رزرو کاروان
-              </Button>
+                <Button
+                  color="warning"
+                  radius="none"
+                  border="none"
+                  size="xl"
+                  width="lg"
+                  className="h-11 w-full shrink-0 text-white"
+                >
+                  رزرو کاروان
+                </Button>
+              </Link>
             </div>
           </div>
         </div>

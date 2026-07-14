@@ -1,0 +1,47 @@
+"use client";
+
+import { useEffect, useState, type ReactNode } from "react";
+import { usePathname, useRouter } from "next/navigation";
+
+import { buildIndividualLoginUrl } from "@/features/auth/lib/panelRouting";
+import { useAuthStore } from "@/features/auth/store/useAuthStore";
+
+type Props = {
+  children: ReactNode;
+};
+
+/** Redirects unauthenticated visitors to login before general reservation. */
+export function GeneralReservationGate({ children }: Props) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const user = useAuthStore((s) => s.user);
+  const [hydrated, setHydrated] = useState(false);
+
+  useEffect(() => {
+    const unsub = useAuthStore.persist.onFinishHydration(() => setHydrated(true));
+    if (useAuthStore.persist.hasHydrated()) setHydrated(true);
+    return unsub;
+  }, []);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    if (!user) {
+      router.replace(buildIndividualLoginUrl(pathname));
+    }
+  }, [hydrated, user, pathname, router]);
+
+  if (!hydrated) {
+    return (
+      <div
+        className="flex min-h-dvh items-center justify-center bg-[#F5F9F6]"
+        dir="rtl"
+      >
+        <p className="text-sm text-[#61756F]">در حال بارگذاری...</p>
+      </div>
+    );
+  }
+
+  if (!user) return null;
+
+  return <>{children}</>;
+}

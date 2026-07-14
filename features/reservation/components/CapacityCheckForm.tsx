@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useMemo, useState } from "react"; // اضافه شدن useState
+import { useMemo, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import CalendarMonthOutlined from "@mui/icons-material/CalendarMonthOutlined";
 import KeyboardArrowDown from "@mui/icons-material/KeyboardArrowDown";
@@ -20,30 +20,17 @@ import DatePicker from "react-multi-date-picker";
 import persian from "react-date-object/calendars/persian";
 import persian_fa from "react-date-object/locales/persian_fa";
 import InputAdornment from "@mui/material/InputAdornment";
-
-const guestField = z
-  .union([z.literal(""), z.number()])
-  .refine(
-    (v): v is number => typeof v === "number" && v >= 1 && v <= 5,
-    "تعداد نفرات بین ۱ تا ۵ نفر الزامی است",
-  );
+import { useCheckCapacity } from "@/features/user-panel/api/hooks";
+import { toAsciiDigits } from "@/lib/api/dateFormat";
+import CalendarHeader from "@/features/shared/ui/datePicker/CalendarHeader";
+import { isCapacityAvailable } from "@/features/shared/lib/capacityResult";
+import { useReservationRulesStore } from "@admin-kit/settings/useReservationRulesStore";
 
 export type CapacityFormValues = {
   guests: number | "";
   entryDate: string;
   exitDate: string;
 };
-
-const schema = z
-  .object({
-    guests: guestField,
-    entryDate: z.string().min(1, "تاریخ ورود را انتخاب کنید"),
-    exitDate: z.string().min(1, "تاریخ خروج را انتخاب کنید"),
-  })
-  .refine((d) => d.exitDate >= d.entryDate, {
-    message: "تاریخ خروج باید هم‌زمان یا بعد از تاریخ ورود باشد",
-    path: ["exitDate"],
-  });
 
 type Props = {
   className?: string;
@@ -74,10 +61,68 @@ const selectSx = {
   },
 };
 
+function stayDaysInclusive(entry: string, exit: string): number {
+  try {
+    const a = new DateObject({
+      date: toAsciiDigits(entry),
+      format: "YYYY/MM/DD",
+      calendar: persian,
+    });
+    const b = new DateObject({
+      date: toAsciiDigits(exit),
+      format: "YYYY/MM/DD",
+      calendar: persian,
+    });
+    const diff = Math.round(
+      (b.toDate().getTime() - a.toDate().getTime()) / (24 * 60 * 60 * 1000),
+    );
+    return diff + 1;
+  } catch {
+    return 0;
+  }
+}
+
 export function CapacityCheckForm({ className }: Props) {
-  const checkCapacity = useReservationCapacityStore((s) => s.checkCapacity);
+  const checkCapacityStore = useReservationCapacityStore((s) => s.checkCapacity);
   const resetCapacityCheck = useReservationCapacityStore(
     (s) => s.resetCapacityCheck,
+  );
+  const storedGuests = useReservationCapacityStore((s) => s.guests);
+  const storedEntry = useReservationCapacityStore((s) => s.entryDate);
+  const storedExit = useReservationCapacityStore((s) => s.exitDate);
+  const checkCapacityApi = useCheckCapacity();
+  const [capacityError, setCapacityError] = useState<string | null>(null);
+  const maxPersons = useReservationRulesStore(
+    (s) => s.publicRules.maxPersonsPerReservation,
+  );
+  const maxStayDays = useReservationRulesStore((s) => s.publicRules.maxStayDays);
+
+  const schema = useMemo(
+    () =>
+      z
+        .object({
+          guests: z
+            .union([z.literal(""), z.number()])
+            .refine(
+              (v): v is number =>
+                typeof v === "number" && v >= 1 && v <= maxPersons,
+              `تعداد نفرات بین ۱ تا ${maxPersons} نفر الزامی است`,
+            ),
+          entryDate: z.string().min(1, "تاریخ ورود را انتخاب کنید"),
+          exitDate: z.string().min(1, "تاریخ خروج را انتخاب کنید"),
+        })
+        .refine((d) => d.exitDate >= d.entryDate, {
+          message: "تاریخ خروج باید هم‌زمان یا بعد از تاریخ ورود باشد",
+          path: ["exitDate"],
+        })
+        .refine(
+          (d) => stayDaysInclusive(d.entryDate, d.exitDate) <= maxStayDays,
+          {
+            message: `حداکثر مدت اقامت ${maxStayDays} روز است`,
+            path: ["exitDate"],
+          },
+        ),
+    [maxPersons, maxStayDays],
   );
 
   const {
@@ -87,18 +132,43 @@ export function CapacityCheckForm({ className }: Props) {
     formState: { errors },
   } = useForm<CapacityFormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { guests: "", entryDate: "", exitDate: "" },
+    defaultValues: {
+      guests: storedGuests >= 1 ? Math.min(storedGuests, maxPersons) : "",
+      entryDate: storedEntry || "",
+      exitDate: storedExit || "",
+    },
   });
 
   const watchedEntry = useWatch({ control, name: "entryDate" });
   const watchedExit = useWatch({ control, name: "exitDate" });
-
-  // ۱. یک استیت محلی برای نگه‌داری دقیق آبجکت‌های DatePicker می‌سازیم
   const [datePickerValues, setDatePickerValues] = useState<DateObject[]>([]);
+  const guestOptions = useMemo(
+    () => Array.from({ length: maxPersons }, (_, i) => i + 1),
+    [maxPersons],
+  );
 
-  const onValid = (data: CapacityFormValues) => {
+  const onValid = async (data: CapacityFormValues) => {
     if (typeof data.guests !== "number") return;
-    checkCapacity(data.guests, data.entryDate, data.exitDate);
+    setCapacityError(null);
+    try {
+      const result = await checkCapacityApi.mutateAsync({
+        enterTime: data.entryDate,
+        exitTime: data.exitDate,
+        maleAmount: data.guests,
+        femaleAmount: 0,
+      });
+      if (!isCapacityAvailable(result)) {
+        setCapacityError("ظرفیت کافی برای این تاریخ موجود نیست.");
+        resetCapacityCheck();
+        return;
+      }
+      checkCapacityStore(data.guests, data.entryDate, data.exitDate);
+    } catch (err) {
+      setCapacityError(
+        err instanceof Error ? err.message : "بررسی ظرفیت ناموفق بود.",
+      );
+      resetCapacityCheck();
+    }
   };
 
   const rangeError = errors.entryDate?.message || errors.exitDate?.message;
@@ -117,11 +187,11 @@ export function CapacityCheckForm({ className }: Props) {
         calendarPosition="bottom-left"
         calendar={persian}
         locale={persian_fa}
-        value={datePickerValues} // ۲. استیت محلی را به تقویم وصل می‌کنیم
+        className="reservation-calendar"
+        plugins={[<CalendarHeader key="header" position="top" />]}
+        value={datePickerValues}
         onChange={(dates) => {
           resetCapacityCheck();
-          
-          // ۳. استیت تقویم را مستقیماً با مقادیر خودش آپدیت می‌کنیم تا فرآیند انتخاب قطع نشود
           const newDates = (dates || []) as DateObject[];
           setDatePickerValues(newDates);
 
@@ -131,13 +201,27 @@ export function CapacityCheckForm({ className }: Props) {
             return;
           }
 
-          // ۴. مقادیر را برای ریکت‌هوک‌فرم به فرمت رشته درمی‌آوریم
           const first = newDates[0];
-          const second = newDates[1];
+          let second = newDates[1];
 
-          const a = first ? first.format("YYYY/MM/DD") : "";
-          const b = second ? second.format("YYYY/MM/DD") : "";
+          if (first && second) {
+            const span = stayDaysInclusive(
+              toAsciiDigits(first.format("YYYY/MM/DD")),
+              toAsciiDigits(second.format("YYYY/MM/DD")),
+            );
+            if (span > maxStayDays) {
+              second = new DateObject(first).add(maxStayDays - 1, "days");
+              setDatePickerValues([first, second]);
+              setCapacityError(
+                `حداکثر مدت اقامت ${maxStayDays} روز است؛ بازه محدود شد.`,
+              );
+            } else {
+              setCapacityError(null);
+            }
+          }
 
+          const a = first ? toAsciiDigits(first.format("YYYY/MM/DD")) : "";
+          const b = second ? toAsciiDigits(second.format("YYYY/MM/DD")) : "";
           setValue("entryDate", a, { shouldValidate: true });
           setValue("exitDate", b, { shouldValidate: true });
         }}
@@ -161,10 +245,7 @@ export function CapacityCheckForm({ className }: Props) {
                   <InputAdornment position="end">
                     <CalendarMonthOutlined
                       onClick={openCalendar}
-                      sx={{
-                        cursor: "pointer",
-                        color: colors.neutral08,
-                      }}
+                      sx={{ cursor: "pointer", color: colors.neutral08 }}
                     />
                   </InputAdornment>
                 ),
@@ -177,7 +258,7 @@ export function CapacityCheckForm({ className }: Props) {
                   borderRadius: "12px",
                   backgroundColor: colors.backgroundW,
                   "& fieldset": { borderColor: "#E5E7EB" },
-                  "&:-hover fieldset": { borderColor: colors.goldLine },
+                  "&:hover fieldset": { borderColor: colors.goldLine },
                   "&.Mui-focused fieldset": {
                     borderColor: colors.goldLine,
                     borderWidth: "1px",
@@ -226,7 +307,9 @@ export function CapacityCheckForm({ className }: Props) {
                 renderValue={(v) => {
                   const val = v as CapacityFormValues["guests"];
                   return val === "" ? (
-                    <span className="text-[#8A9E98]">تعداد نفرات (۱ تا ۵)</span>
+                    <span className="text-[#8A9E98]">
+                      {`تعداد نفرات (۱ تا ${maxPersons})`}
+                    </span>
                   ) : (
                     <span>{`${val} نفر`}</span>
                   );
@@ -235,7 +318,7 @@ export function CapacityCheckForm({ className }: Props) {
                 <MenuItem value="">
                   <em>انتخاب کنید</em>
                 </MenuItem>
-                {[1, 2, 3, 4, 5].map((n) => (
+                {guestOptions.map((n) => (
                   <MenuItem key={n} value={n}>
                     {n} نفر
                   </MenuItem>
@@ -249,6 +332,10 @@ export function CapacityCheckForm({ className }: Props) {
         }}
       />
 
+      {capacityError ? (
+        <p className="w-full text-sm text-red-500 md:basis-full">{capacityError}</p>
+      ) : null}
+
       <Button
         type="submit"
         text="white"
@@ -258,8 +345,9 @@ export function CapacityCheckForm({ className }: Props) {
         size="twoxl"
         width="xl"
         className="w-full shrink-0 font-extralight md:w-43"
+        disabled={checkCapacityApi.isPending}
       >
-        چک ظرفیت
+        {checkCapacityApi.isPending ? "در حال بررسی…" : "چک ظرفیت"}
       </Button>
     </form>
   );
