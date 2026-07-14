@@ -11,6 +11,8 @@ export type UserProfile = {
   name: string;
   phone: string;
   email: string;
+  /** پس از ثبت نام مدیر کاروان */
+  caravanName?: string;
 };
 
 export type ReservationStatus = "pending" | "confirmed" | "cancelled";
