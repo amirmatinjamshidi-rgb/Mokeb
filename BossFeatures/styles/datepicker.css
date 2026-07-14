@@ -1,0 +1,59 @@
+/* react-multi-date-picker — global styles (import once from app/layout.tsx) */
+
+.rmdp-wrapper {
+  background: white !important;
+  border: none !important;
+  border-radius: 16px !important;
+}
+
+.rmdp-container {
+  width: 100%;
+}
+
+/* Hide library default month header (custom header is a plugin) */
+.rmdp-header {
+  display: none !important;
+}
+
+.rmdp-day span:hover {
+  background: #175e474d !important;
+  color: #175e47 !important;
+}
+
+.rmdp-day.rmdp-range:not(.rmdp-selected) span {
+  background: #279f78 !important;
+  color: #ffffff !important;
+}
+
+.rmdp-range-start span,
+.rmdp-range-end span,
+.rmdp-day.rmdp-selected span {
+  background: #175e47 !important;
+  color: white !important;
+}
+
+.rmdp-today span {
+  background: white !important;
+  border: 1px solid #d8b648 !important;
+  border-radius: 12px !important;
+}
+
+.rmdp-arrow-container {
+  width: 40px !important;
+  height: 40px !important;
+  border-radius: 12px !important;
+  color: #6b8079 !important;
+}
+
+.rmdp-arrow-container:hover {
+  background: #175e474d !important;
+}
+
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
