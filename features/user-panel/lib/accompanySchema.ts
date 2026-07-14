@@ -1,6 +1,6 @@
 import type { ProfileFormValues } from "./profileSchema";
 
-export type Accompany = ProfileFormValues & { id: number };
+export type Accompany = ProfileFormValues & { id: string };
 
 export function genderLabel(gender: ProfileFormValues["gender"]) {
   return gender === "female" ? "زن" : "مرد";

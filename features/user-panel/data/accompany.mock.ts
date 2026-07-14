@@ -2,7 +2,7 @@ import type { Accompany } from "@/features/user-panel/lib/accompanySchema";
 
 export const mockAccompanies: Accompany[] = [
   {
-    id: 1,
+    id: "1",
     fullName: "علی محمدی",
     fatherName: "حسین",
     gender: "male",
@@ -19,7 +19,7 @@ export const mockAccompanies: Accompany[] = [
     relativePhone: "02144556677",
   },
   {
-    id: 2,
+    id: "2",
     fullName: "زهرا کریمی",
     fatherName: "محمد",
     gender: "female",
