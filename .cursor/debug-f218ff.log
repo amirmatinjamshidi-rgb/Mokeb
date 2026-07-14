@@ -1,0 +1,5 @@
+{"sessionId":"f218ff","hypothesisId":"H1","location":"LoginClient.tsx:phoneFormSubmit","message":"form submit event fired","data":{"defaultPreventedBefore":false,"phoneValue":"09120742295"},"timestamp":1782672358817}
+{"sessionId":"f218ff","hypothesisId":"H1","location":"LoginClient.tsx:phoneFormSubmitAfter","message":"after handleSubmit call","data":{"defaultPreventedAfter":true},"timestamp":1782672358819}
+{"sessionId":"f218ff","hypothesisId":"H3","location":"LoginClient.tsx:onPhoneSubmit","message":"phone submit handler ran","data":{"stepBefore":"phone","flow":"normal"},"timestamp":1782672358820}
+{"sessionId":"f218ff","hypothesisId":"H5","location":"LoginClient.tsx:phonePrefillEffect","message":"phone prefill effect ran","data":{"phoneParam":"09120742295"},"timestamp":1782672374773}
+{"sessionId":"f218ff","hypothesisId":"H5","location":"LoginClient.tsx:phonePrefillEffect","message":"phone prefill effect ran","data":{"phoneParam":"09120742295"},"timestamp":1782672374775}

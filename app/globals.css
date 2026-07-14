@@ -148,6 +148,94 @@
   }
 }
 
+/* General reservation date picker (react-multi-date-picker) */
+.reservation-calendar.rmdp-wrapper {
+  background: #ffffff;
+  border: none;
+  border-radius: 16px;
+  box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.14);
+  padding-bottom: 8px;
+}
+
+/* Replaced by the CalendarHeader plugin */
+.reservation-calendar .rmdp-header {
+  display: none;
+}
+
+/* Hide the day grid while the year wheel is open */
+.reservation-calendar:has(.reservation-year-wheel-open) .rmdp-day-picker {
+  display: none !important;
+}
+
+.reservation-calendar .rmdp-week-day {
+  color: #8a9e98;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.reservation-calendar .rmdp-day {
+  width: 40px;
+  height: 40px;
+  color: #586a64;
+}
+
+.reservation-calendar .rmdp-day span {
+  font-size: 14px;
+  border-radius: 12px;
+}
+
+.reservation-calendar .rmdp-day:not(.rmdp-disabled):not(.rmdp-day-hidden) span:hover {
+  background-color: rgba(23, 94, 71, 0.15);
+  color: #175e47;
+}
+
+.reservation-calendar .rmdp-today span {
+  background-color: transparent;
+  border: 1px solid #d8b648;
+  border-radius: 12px;
+  color: inherit;
+}
+
+/* Days between the two selected dates: #175E47 at 30% */
+.reservation-calendar .rmdp-range {
+  background-color: rgba(23, 94, 71, 0.3);
+  box-shadow: none;
+  color: #175e47;
+  border-radius: 0;
+}
+
+.reservation-calendar .rmdp-range span:hover {
+  background-color: transparent !important;
+  color: inherit !important;
+}
+
+/* Selected start/end days: solid #175E47, 12px radius on the outer edge (RTL) */
+.reservation-calendar .rmdp-range.start,
+.reservation-calendar .rmdp-range.end {
+  background-color: #175e47;
+  color: #ffffff;
+}
+
+.reservation-calendar .rmdp-range.start {
+  border-radius: 0 12px 12px 0;
+}
+
+.reservation-calendar .rmdp-range.end {
+  border-radius: 12px 0 0 12px;
+}
+
+.reservation-calendar .rmdp-range.start.end {
+  border-radius: 12px;
+}
+
+/* Single-day selection (profile / sign-in pickers) */
+.reservation-calendar .rmdp-day.rmdp-selected span:not(.highlight) {
+  background-color: #175e47;
+  box-shadow: none;
+  color: #ffffff;
+  border-radius: 12px;
+}
+
 /* Shared panel sidebar (UserPanel, Boss, Admin use admin-kit SidebarNav) */
 .sidebar-nav-item {
   --sidebar-nav-fill: transparent;
