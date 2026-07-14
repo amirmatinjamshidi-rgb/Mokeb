@@ -1,7 +1,7 @@
 ﻿"use client";
 
 import Image from "next/image";
-import Navbar from "@/features/shared/layout/Navbar";
+import Navbar from "@/features/site/layout/Navbar";
 import { HeroLanterns } from "@/features/shared/components/HeroLanterns";
 import { colors, HERO_H_MOBILE } from "@/features/reservation/tokens";
 
