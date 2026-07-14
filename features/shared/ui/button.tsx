@@ -44,6 +44,8 @@ const widthVariants = {
   md: "w-[132px]",
   lg: "w-[148px]",
   xl: "w-[172px]",
+  /** Home reservation promo cards — fixed width to match copy block. */
+  g240: "w-[240px] min-w-[240px] max-w-full",
   auto: "w-auto",
 } as const;
 
