@@ -17,7 +17,6 @@ import {
   Phone,
   ShieldCheck,
   HeartPulse,
-  Droplets,
   ContactRound,
   Pencil,
 } from "lucide-react";
@@ -25,6 +24,7 @@ import {
 import Button from "@/features/shared/ui/button";
 import { isControlledInputValid } from "@/features/shared/lib/inputValidation";
 import { cn } from "@/features/shared/lib/utils";
+import { FormBloodTypeSelect } from "@/features/shared/ui/BloodTypeSelect";
 import { IconLabelInput } from "@/features/shared/ui/IconLabelInput";
 import type {
   PilgrimFormValues,
@@ -436,33 +436,10 @@ export default function PilgrimInfoForm({
         />
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          <Controller
+          <FormBloodTypeSelect
             name={field("bloodType")}
             control={control}
-            render={({ field: f, fieldState }) => (
-              <div className="w-full">
-                <IconLabelInput
-                  name={f.name}
-                  ref={f.ref}
-                  onBlur={f.onBlur}
-                  onChange={f.onChange}
-                  value={inputString(f.value)}
-                  // label="گروه خونی"
-                  icon={<Droplets size={18} />}
-                  placeholder="گروه خونی"
-                  isValid={isControlledInputValid({
-                    value: inputString(f.value),
-                    fieldState,
-                  })}
-                className={cn(fieldState.error && "border-red-400")}
-                />
-                {fieldState.error?.message ? (
-                  <p className="mt-1.5 text-right text-xs text-red-600">
-                    {fieldState.error.message}
-                  </p>
-                ) : null}
-              </div>
-            )}
+            allowEmpty
           />
 
           <Controller
