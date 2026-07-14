@@ -1,32 +1,28 @@
 import type { Metadata } from "next";
-import "./globals.css";
+import type { ReactNode } from "react";
 import localFont from "next/font/local";
 
+import "./globals.css";
 
 const iranSans500 = localFont({
   src: "../../public/fonts/woff2/IRANSansWebFaNum_Medium.woff2",
   weight: "500",
   style: "normal",
   variable: "--font-iransans-700",
-  display: "swap",  
+  display: "swap",
 });
+
 export const metadata: Metadata = {
   title: "موکب",
   description: "موکب پنل مدیریت",
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function AdminLayout({ children }: { children: ReactNode }) {
   return (
-    <html
-      lang="fa"
-      dir="rtl"
-      className={`${iranSans500.variable} h-full antialiased`}
+    <div
+      className={`${iranSans500.variable} flex min-h-full flex-col font-sans antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
-    </html>
+      {children}
+    </div>
   );
 }

@@ -1,32 +1,12 @@
 "use client";
 
-import Image from "next/image";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import Login from "@admin-kit/Login/Login";
+import LoginBackground from "@admin-kit/layouts/LoginBackground";
 import { ROUTES } from "@admin-kit/navigation/routes";
 import { useAuthStore } from "@admin-kit/shared/store/authStore";
-
-function LoginBackground({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="relative flex min-h-dvh w-full items-center justify-center p-4" dir="rtl">
-      <Image
-        src="/Loginbg.png"
-        alt=""
-        fill
-        priority
-        className="object-cover object-center"
-        sizes="100vw"
-      />
-      <div
-        className="absolute inset-0 bg-[rgba(92,147,125,0.82)]"
-        aria-hidden
-      />
-      <div className="relative z-10 w-full max-w-[384px]">{children}</div>
-    </div>
-  );
-}
 
 export function LoginPage() {
   const router = useRouter();
