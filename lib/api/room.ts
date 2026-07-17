@@ -3,26 +3,54 @@ import type {
   AddRoomAvailabilityCommand,
   AddRoomCommand,
   ChangeRoomAvailabilityDateCommand,
+  RemoveRoomCommand,
   RoomAvailabilityDto,
   RoomDto,
   RoomReportStatsDto,
 } from "./types";
 
-/** POST /Room — often returns plain text without a UUID. */
+/**
+ * Response shape for GET /Room/RoomAvailabilities/{enter}/{exit}
+ * (also used as the reliable “list for a date” path).
+ */
+export type RoomAvailabilitiesByRangeDto = {
+  maleRoomAvailabilities?: RoomAvailabilityDto[] | null;
+  femaleRoomAvailabilities?: RoomAvailabilityDto[] | null;
+  MaleRoomAvailabilities?: RoomAvailabilityDto[] | null;
+  FemaleRoomAvailabilities?: RoomAvailabilityDto[] | null;
+  maleAvailability?: RoomAvailabilityDto[] | null;
+  femaleAvailability?: RoomAvailabilityDto[] | null;
+  MaleAvailability?: RoomAvailabilityDto[] | null;
+  FemaleAvailability?: RoomAvailabilityDto[] | null;
+};
+
+/** POST /Room — returns `{ id, roomId, message }`. */
 export async function addRoom(body: AddRoomCommand) {
   return apiRequest<
     RoomDto | string | { id?: string; roomId?: string; Id?: string; RoomId?: string }
   >("/Room", {
     method: "POST",
-    body,
+    body: {
+      name: body.name,
+      gender: body.gender,
+      capacity: body.capacity,
+    },
   });
 }
 
-/** DELETE /Room/{roomId} */
+/** GET /Room — list of rooms with UUID. */
+export async function getRooms() {
+  return apiRequest<RoomDto[]>("/Room", {
+    method: "GET",
+  });
+}
+
+/** DELETE /Room/{roomId} — JSON body required (415 without Content-Type). */
 export async function deleteRoom(roomId: string) {
-  return apiRequest<void>(`/Room/${roomId}`, {
+  const body: RemoveRoomCommand = { roomId };
+  return apiRequest<void | string>(`/Room/${roomId}`, {
     method: "DELETE",
-    body: { roomId },
+    body,
   });
 }
 
@@ -54,10 +82,13 @@ export async function changeRoomAvailabilityDate(
     availabilityId: body.availabilityId ?? roomAvailabilityId,
     newDate: body.newDate,
   };
-  return apiRequest<void>(`/Room/${roomId}/${roomAvailabilityId}/ChangeDate`, {
-    method: "PUT",
-    body: payload,
-  });
+  return apiRequest<void | string>(
+    `/Room/${roomId}/${roomAvailabilityId}/ChangeDate`,
+    {
+      method: "PUT",
+      body: payload,
+    },
+  );
 }
 
 /** GET /Room/{date}/ReportStats */
@@ -69,7 +100,7 @@ export async function getRoomReportStats(date: string) {
 
 /** GET /Room/RoomAvailabilities/{requestId}/DistinctRoomAvailabilities */
 export async function getDistinctRoomAvailabilities(requestId: string) {
-  return apiRequest<RoomAvailabilityDto[]>(
+  return apiRequest<RoomAvailabilityDto[] | RoomAvailabilitiesByRangeDto>(
     `/Room/RoomAvailabilities/${requestId}/DistinctRoomAvailabilities`,
     {
       method: "GET",
@@ -77,12 +108,12 @@ export async function getDistinctRoomAvailabilities(requestId: string) {
   );
 }
 
-/** GET /Room/RoomAvailabilities/{enterDate}/{exitDate} */
+/** GET /Room/RoomAvailabilities/{enterDate}/{exitDate} — reliable list (“get all” for a range). */
 export async function getRoomAvailabilitiesByRange(
   enterDate: string,
   exitDate: string,
 ) {
-  return apiRequest<RoomAvailabilityDto[]>(
+  return apiRequest<RoomAvailabilityDto[] | RoomAvailabilitiesByRangeDto>(
     `/Room/RoomAvailabilities/${enterDate}/${exitDate}`,
     {
       method: "GET",
@@ -90,16 +121,10 @@ export async function getRoomAvailabilitiesByRange(
   );
 }
 
-/**
- * GET /Room/RoomAvailabilities/{date}
- * Swagger lists a request body, but browsers cannot send GET bodies reliably —
- * the date in the path is enough for ASP.NET DateOnly binding.
- */
+/** GET /Room/RoomAvailabilities/{date} */
 export async function getRoomAvailabilitiesByDate(date: string) {
   return apiRequest<RoomAvailabilityDto[]>(
     `/Room/RoomAvailabilities/${date}`,
-    {
-      method: "GET",
-    },
+    { method: "GET" },
   );
 }

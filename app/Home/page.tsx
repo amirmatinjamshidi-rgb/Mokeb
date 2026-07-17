@@ -14,11 +14,11 @@ function page() {
       <Hero />
       <div className="page-container flex flex-col gap-10 pb-12 pt-6 sm:gap-14 md:gap-20">
         <ServicesSection />
-        <AbilityCardList />
         <HomeReservationBoxes />
         <HazratImage />
         <KarvanRoad />
         <HomeAccordion />
+        <AbilityCardList />
         <Submit />
       </div>
     </>

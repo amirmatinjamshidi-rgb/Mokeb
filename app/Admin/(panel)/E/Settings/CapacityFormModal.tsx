@@ -20,7 +20,7 @@ export type CapacityFormValues = {
   capacity: string;
   classLevel: string;
   gender: CapacityGender;
-  /** Optional UUID when backend create does not return room id. */
+  /** Present on edit; on add the backend returns UUID from POST /Room. */
   roomId: string;
   /** Target availability date (ISO YYYY-MM-DD) for activate / ChangeDate. */
   targetDate: string;
@@ -214,13 +214,13 @@ export function CapacityFormModal(props: Props) {
           className={inputClass}
         />
 
-        <FormTextInput
+        {/* <FormTextInput
           name="classLevel"
           control={control}
           placeholder="نوع رزرو"
           rightIcon={Receipt}
           className={inputClass}
-        />
+        /> */}
 
         <div className="sm:col-span-2">
           <PersianDateField
@@ -231,15 +231,17 @@ export function CapacityFormModal(props: Props) {
           />
         </div>
 
-        <FormTextInput
-          name="roomId"
-          control={control}
-          placeholder="شناسه اتاق (UUID) — اگر بک‌اند UUID برنگرداند اینجا بگذارید"
-          rightIcon={UsersRound}
-          className={cn(inputClass, "sm:col-span-2")}
-        />
+        {isEdit ? (
+          <FormTextInput
+            name="roomId"
+            control={control}
+            placeholder="شناسه اتاق (UUID)"
+            rightIcon={UsersRound}
+            className={cn(inputClass, "sm:col-span-2")}
+          />
+        ) : null}
 
-        <div className={cn("flex h-14 items-center", !isEdit && "sm:col-span-2")}>
+        <div className={cn("flex h-14 items-center", "sm:col-span-2")}>
           <GenderRadioField control={control} />
         </div>
       </form>

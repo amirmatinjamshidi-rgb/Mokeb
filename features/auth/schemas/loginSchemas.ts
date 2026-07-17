@@ -19,38 +19,3 @@ export function isValidIranNationalId(code: string): boolean {
   const r = sum % 11;
   return (r < 2 && check === r) || (r >= 2 && check === 11 - r);
 }
-
-/** تکمیل اطلاعات نماینده کاروان (بعد از ورود). */
-export const caravanRepresentativeSchema = z.object({
-  fullName: z
-    .string()
-    .trim()
-    .min(3, "نام و نام خانوادگی را کامل وارد کنید"),
-  nationalCode: z
-    .string()
-    .trim()
-    .superRefine((val, ctx) => {
-      const n = val.replace(/\s/g, "");
-      if (!/^\d{10}$/.test(n)) {
-        ctx.addIssue({
-          code: "custom",
-          message: "کد ملی باید ۱۰ رقم عددی باشد",
-        });
-        return;
-      }
-      if (!isValidIranNationalId(n)) {
-        ctx.addIssue({
-          code: "custom",
-          message: "کد ملی معتبر نیست",
-        });
-      }
-    }),
-  caravanName: z
-    .string()
-    .trim()
-    .min(2, "نام کاروان را وارد کنید"),
-});
-
-export type CaravanRepresentativeValues = z.infer<
-  typeof caravanRepresentativeSchema
->;

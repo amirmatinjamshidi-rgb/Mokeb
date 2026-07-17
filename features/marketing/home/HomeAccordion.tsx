@@ -1,4 +1,5 @@
 ﻿import MiniAccordionList from "@/features/shared/ui/Accordion";
+
 const MiniAccordion = [
   {
     question: "چگونه می‌توانم اتاق رزرو کنم؟",
@@ -38,16 +39,15 @@ const MiniAccordion = [
   {
     question: "چگونه می‌توان نذورات و کمک‌های مردمی را به موکب اهدا کرد؟",
     answer:
-      ".",
+      "از طریق پنل کاربری یا مراجعه حضوری به مسئول نذورات موکب می‌توانید کمک‌های نقدی و غیرنقدی خود را ثبت و اهدا کنید.",
   },
 ];
+
 function FAQ() {
   return (
-    <div className="flex h-auto min-h-0 w-full flex-col items-stretch gap-6 overflow-hidden rounded-3xl px-4 py-8 sm:gap-8 sm:px-6 sm:py-10 lg:flex-row lg:items-center lg:justify-between lg:px-12 lg:py-12">
-
-
-      <div className="w-full ">
-        <MiniAccordionList items={MiniAccordion}/>
+    <div className="flex w-full flex-col items-stretch gap-6 rounded-3xl px-4 py-8 sm:gap-8 sm:px-6 sm:py-10 lg:px-12 lg:py-12">
+      <div className="w-full">
+        <MiniAccordionList items={MiniAccordion} />
       </div>
     </div>
   );

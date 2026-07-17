@@ -1,0 +1,6 @@
+@Mokeb.Host_HostAddress = http://localhost:5158
+
+GET {{Mokeb.Host_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

@@ -18,6 +18,7 @@ import type { BloodTypeOption } from "@/features/shared/constants/bloodTypes";
 import type { Accompany } from "../components/ManagementSchema";
 import type { ProfileFormValues } from "../lib/profileSchema";
 import type { PilgrimFormValues } from "../components/AddKarevan/FormSchemas";
+import { useReservationCapacityStore } from "../components/AddKarevan/useReservationCapacityStore";
 
 export function useBossId() {
   return useAuthStore((s) =>
@@ -130,6 +131,38 @@ export function useDownloadBossRequestPdf() {
   });
 }
 
+/** Cancel / reject a caravan request so it drops from active lists. */
+export function useCancelBossRequest() {
+  const bossId = useBossId();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (requestId: string) => {
+      if (!requestId) throw new Error("شناسه رزرو نامعتبر است.");
+      await requestApi.rejectRequest(requestId);
+      return requestId;
+    },
+    onSuccess: (requestId) => {
+      if (bossId) {
+        void qc.invalidateQueries({ queryKey: bossQueryKeys.requests(bossId) });
+      }
+      const state = useReservationCapacityStore.getState();
+      if (
+        state.submittedRequestId &&
+        (state.submittedRequestId === requestId ||
+          state.submittedRequestId
+            .toLowerCase()
+            .startsWith(requestId.slice(0, 8).toLowerCase()) ||
+          requestId
+            .toLowerCase()
+            .startsWith(state.submittedRequestId.slice(0, 8).toLowerCase()))
+      ) {
+        state.setSubmittedRequest(null);
+        state.setActiveStep(0);
+      }
+    },
+  });
+}
+
 // ─── Companions ───────────────────────────────────────────────────────────────
 
 export function useBossCompanions(search = "") {
@@ -170,7 +203,7 @@ export function useAddBossCompanion() {
       });
     },
     onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: ["boss", "companions", bossId ?? ""] });
+      void qc.invalidateQueries({ queryKey: ["boss", "companions"] });
     },
   });
 }
@@ -181,10 +214,12 @@ export function useRemoveBossCompanion() {
   return useMutation({
     mutationFn: async (nationalCode: string) => {
       if (!bossId) throw new Error("وارد حساب کاروان نشده‌اید.");
-      return caravanApi.removePilgrim(bossId, { nationalCode });
+      const code = nationalCode.trim();
+      if (!code) throw new Error("کد ملی/پاسپورت برای حذف لازم است.");
+      return caravanApi.removePilgrim(bossId, { nationalCode: code });
     },
     onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: ["boss", "companions", bossId ?? ""] });
+      void qc.invalidateQueries({ queryKey: ["boss", "companions"] });
     },
   });
 }
@@ -198,7 +233,7 @@ export function useUploadBossCompanionFile() {
       return caravanApi.uploadPilgrimsExcel(bossId, file);
     },
     onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: ["boss", "companions", bossId ?? ""] });
+      void qc.invalidateQueries({ queryKey: ["boss", "companions"] });
     },
   });
 }

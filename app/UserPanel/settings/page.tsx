@@ -15,7 +15,7 @@ export default function UserPanelSettingsPage() {
 
   return (
     <div className="flex w-full flex-col gap-16">
-      <h1 className="flex w-full items-center gap-2 text-2xl font-bold text-gray-500 sm:text-3xl">
+      <h1 dir="rtl" className="flex w-full items-center gap-2 text-2xl font-bold text-gray-500 sm:text-3xl mt-12 mr-12">
         <Bolt className="size-7 sm:size-8" />
         تنظیمات
       </h1>

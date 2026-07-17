@@ -4,6 +4,8 @@ import { useEffect, useRef } from "react";
 
 import { toPersianDigits } from "@/features/shared/lib/format";
 
+const MIN_YEAR = 1300;
+
 const ITEM_HEIGHT = 48;
 
 const WHEEL_HEIGHT = ITEM_HEIGHT * 5;
@@ -20,11 +22,12 @@ type Props = {
 
 export default function YearWheelPicker({
   value,
-  years,
+  years: allYears,
   onChange,
   onPick,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const years = allYears.filter((year) => year >= MIN_YEAR);
 
   // Center the initial year once, when the wheel opens.
   useEffect(() => {

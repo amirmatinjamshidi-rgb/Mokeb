@@ -12,6 +12,8 @@ import {
   requestApi,
   roomApi,
   BloodType,
+  Gender,
+  RequestState,
   type AddOfficialCommand,
   type AddRoomCommand,
   type CaravanPrincipalDto,
@@ -22,6 +24,7 @@ import {
   type OfficialDto,
   type RequestStatusDto,
   type RoomAvailabilityDto,
+  type RoomDto,
   type RoomReportStatsDto,
 } from "@/lib/api";
 import type { PilgrimFormValues } from "@admin-kit/schemas/supervisorFormSchemas";
@@ -80,10 +83,26 @@ export function normalizeList<T>(value: unknown): T[] {
   if (Array.isArray(value)) return value as T[];
   if (value && typeof value === "object") {
     const container = value as Record<string, unknown>;
-    if (Array.isArray(container.value)) return container.value as T[];
-    if (Array.isArray(container.Value)) return container.Value as T[];
-    if (Array.isArray(container.items)) return container.items as T[];
-    if (Array.isArray(container.Items)) return container.Items as T[];
+    // GET /Individual and GET /Caravan return wrapper objects, not bare arrays.
+    const candidates = [
+      container.individualPrincipals,
+      container.IndividualPrincipals,
+      container.caravanPrincipals,
+      container.CaravanPrincipals,
+      container.officials,
+      container.Officials,
+      container.requests,
+      container.Requests,
+      container.response,
+      container.Response,
+      container.value,
+      container.Value,
+      container.items,
+      container.Items,
+    ];
+    for (const candidate of candidates) {
+      if (Array.isArray(candidate)) return candidate as T[];
+    }
   }
   return [];
 }
@@ -111,10 +130,10 @@ export function mapPrincipalToAdminUser(
   accountType: "individual" | "caravan",
 ): AdminUserRow {
   const id = readString(
-    dto.id ??
-      dto.Id ??
-      (dto as CaravanPrincipalDto).principalId ??
-      (dto as CaravanPrincipalDto).PrincipalId,
+    dto.principalId ??
+      dto.PrincipalId ??
+      dto.id ??
+      dto.Id,
   );
   return {
     id,
@@ -128,30 +147,51 @@ export function mapPrincipalToAdminUser(
   };
 }
 
+/**
+ * Backend State: Accepted=0, Rejected=1, Requested=2,
+ * DelayInEntrance=3, DelayInExit=4, Entered=5, Exited=6.
+ */
 function mapRequestStatusLabel(dto: RequestStatusDto) {
   const raw = readString(dto.stringState ?? dto.StringState).toLowerCase();
-  const numericRaw = dto.state ?? dto.State;
+  const numericRaw = dto.requestState ?? dto.RequestState ?? dto.state ?? dto.State;
   const numeric =
     typeof numericRaw === "number" && Number.isFinite(numericRaw)
       ? numericRaw
       : null;
 
-  if (raw.includes("reject") || raw.includes("رد") || numeric === 3) {
+  if (
+    raw.includes("reject") ||
+    raw.includes("رد") ||
+    numeric === RequestState.Rejected
+  ) {
     return "رد شده" as const;
+  }
+  if (
+    raw.includes("delay") ||
+    raw.includes("تاخیر") ||
+    raw.includes("تأخیر") ||
+    numeric === RequestState.DelayInEntrance ||
+    numeric === RequestState.DelayInExit
+  ) {
+    return "تایید شده" as const;
   }
   if (
     raw.includes("accept") ||
     raw.includes("approved") ||
+    raw.includes("وارد") ||
+    raw.includes("خارج") ||
     (raw.includes("تایید") && !raw.includes("انتظار")) ||
-    numeric === 2
+    numeric === RequestState.Accepted ||
+    numeric === RequestState.Entered ||
+    numeric === RequestState.Exited
   ) {
     return "تایید شده" as const;
   }
   if (
     raw.includes("pending") ||
     raw.includes("انتظار") ||
-    numeric === 0 ||
-    numeric === 1 ||
+    raw.includes("request") ||
+    numeric === RequestState.Requested ||
     numeric === null
   ) {
     return "در انتظار بررسی" as const;
@@ -162,57 +202,118 @@ function mapRequestStatusLabel(dto: RequestStatusDto) {
 export function mapRequestDto(dto: RequestStatusDto) {
   const id = readString(dto.requestId ?? dto.RequestId ?? dto.id ?? dto.Id);
   const entryRaw = readString(
-    dto.entranceDate ?? dto.EntranceDate ?? dto.enterTime ?? dto.EnterTime,
+    dto.entranceDate ??
+      dto.EntranceDate ??
+      dto.enterDate ??
+      dto.EnterDate ??
+      dto.enterTime ??
+      dto.EnterTime,
   ).slice(0, 10);
   const exitRaw = readString(
     dto.exitDate ?? dto.ExitDate ?? dto.exitTime ?? dto.ExitTime,
   ).slice(0, 10);
   const entryDate = entryRaw ? isoDateToPersianDate(entryRaw) : "—";
   const exitDate = exitRaw ? isoDateToPersianDate(exitRaw) : "—";
-  const maleCount = readNumber(dto.maleAmount ?? dto.MaleAmount);
-  const femaleCount = readNumber(dto.femaleAmount ?? dto.FemaleAmount);
+  const maleCount = readNumber(
+    dto.maleAmount ?? dto.MaleAmount ?? dto.maleCount ?? dto.MaleCount,
+  );
+  const femaleCount = readNumber(
+    dto.femaleAmount ?? dto.FemaleAmount ?? dto.femaleCount ?? dto.FemaleCount,
+  );
   const totalCapacity =
-    readNumber(dto.totalCapacity ?? dto.TotalCapacity) || maleCount + femaleCount;
+    readNumber(
+      dto.totalCapacity ??
+        dto.TotalCapacity ??
+        dto.overallCount ??
+        dto.OverallCount,
+    ) || maleCount + femaleCount;
+
+  const name = readString(dto.name ?? dto.Name);
+  const familyName = readString(dto.familyName ?? dto.FamilyName);
+  const fullName = readString(
+    dto.fullName ?? dto.FullName ?? dto.supervisorName ?? dto.SupervisorName,
+    [name, familyName].filter(Boolean).join(" "),
+  );
+  const principalType = readString(dto.principalType ?? dto.PrincipalType);
+  const reservationTypeDefault =
+    principalType.toLowerCase() === "individual" ? "انفرادی" : "کاروان";
+
+  // Incoming/Outgoing DTOs have no state — treat as already accepted.
+  const hasStateField =
+    dto.requestState != null ||
+    dto.RequestState != null ||
+    dto.state != null ||
+    dto.State != null ||
+    Boolean(dto.stringState ?? dto.StringState);
+  const status = hasStateField
+    ? mapRequestStatusLabel(dto)
+    : ("تایید شده" as const);
 
   return {
     id,
-    supervisorName: readString(dto.supervisorName ?? dto.SupervisorName, "—"),
+    supervisorName: fullName || "—",
     totalCapacity,
     maleCount,
     femaleCount,
     entryDate,
     exitDate,
-    status: mapRequestStatusLabel(dto),
-    stringState: readString(dto.stringState ?? dto.StringState),
-    reservationType: readString(dto.reservationType ?? dto.ReservationType, "کاروان"),
+    status,
+    stringState: readString(
+      dto.stringState ?? dto.StringState,
+      status === "تایید شده" ? "تایید شده" : "",
+    ),
+    reservationType: readString(
+      dto.reservationType ?? dto.ReservationType,
+      reservationTypeDefault,
+    ),
     reservationClass: readString(dto.reservationClass ?? dto.ReservationClass, "—"),
     reservationCode: readString(dto.reservationCode ?? dto.ReservationCode ?? id, id),
     representativeFirstName: readString(
-      dto.representativeFirstName ?? dto.RepresentativeFirstName,
+      dto.representativeFirstName ?? dto.RepresentativeFirstName ?? name,
       "—",
     ),
     representativeLastName: readString(
-      dto.representativeLastName ?? dto.RepresentativeLastName,
+      dto.representativeLastName ?? dto.RepresentativeLastName ?? familyName,
       "—",
     ),
-    mobile: readString(dto.mobile ?? dto.Mobile),
+    mobile: readString(
+      dto.mobile ?? dto.Mobile ?? dto.phoneNumber ?? dto.PhoneNumber,
+    ),
     stayDuration: readString(dto.stayDuration ?? dto.StayDuration, "0"),
   };
 }
 
-export function mapRoomAvailabilityDto(dto: RoomAvailabilityDto) {
-  const id = readString(dto.id ?? dto.Id);
-  const roomId = readString(dto.roomId ?? dto.RoomId ?? id);
-  const capacity = readNumber(dto.capacity ?? dto.Capacity);
-  const reserved = readNumber(dto.reserved ?? dto.Reserved);
-  const available = readNumber(dto.available ?? dto.Available);
+export function mapRoomAvailabilityDto(
+  dto: RoomAvailabilityDto,
+  genderHint?: Gender,
+) {
+  // Backend RoomAvailabilityDto: roomAvailabilityId, roomId, roomName,
+  // overallCapacity, reservedAmount, emptyCapacity (+ aliases id/capacity/…).
+  const id = readString(
+    dto.roomAvailabilityId ?? dto.RoomAvailabilityId ?? dto.id ?? dto.Id,
+  );
+  const roomId = readString(dto.roomId ?? dto.RoomId);
+  const capacity = readNumber(
+    dto.overallCapacity ?? dto.OverallCapacity ?? dto.capacity ?? dto.Capacity,
+  );
+  const reserved = readNumber(
+    dto.reservedAmount ?? dto.ReservedAmount ?? dto.reserved ?? dto.Reserved,
+  );
+  const available = readNumber(
+    dto.emptyCapacity ?? dto.EmptyCapacity ?? dto.available ?? dto.Available,
+  );
   const remaining =
     available > 0 ? available : Math.max(0, capacity - reserved);
-  const male = (dto.gender ?? dto.Gender) === 0;
+  const rawGender = dto.gender ?? dto.Gender ?? genderHint;
+  // Backend Gender: 0 = Male, 1 = Female (same as lib/api Gender enum).
+  const male = Number(rawGender ?? Gender.Female) === Gender.Male;
   return {
     id,
     roomId,
-    className: readString(dto.roomName ?? dto.RoomName, roomId || "—"),
+    className: readString(
+      dto.roomName ?? dto.RoomName,
+      roomId ? roomId.slice(0, 8) : "—",
+    ),
     capacity,
     reserved,
     available,
@@ -230,23 +331,40 @@ export type RoomAvailabilityRow = ReturnType<typeof mapRoomAvailabilityDto>;
 
 export function mapRoomReportStats(dto: RoomReportStatsDto | null | undefined) {
   const raw = (dto ?? {}) as Record<string, unknown>;
-  const presentAmounts = (raw.presentAmounts ?? {}) as Record<string, unknown>;
-  const entryAmounts = (raw.entryAmounts ?? {}) as Record<string, unknown>;
+  const presentAmounts = (raw.presentAmounts ??
+    raw.PresentAmounts ??
+    {}) as Record<string, unknown>;
+  const entryAmounts = (raw.entryAmounts ??
+    raw.EntryAmounts ??
+    {}) as Record<string, unknown>;
+  const outboundAmounts = (raw.outboundAmounts ??
+    raw.outBoundAmounts ??
+    raw.OutBoundAmounts ??
+    {}) as Record<string, unknown>;
+
+  const filled = readNumber(
+    dto?.amountOfFilledCapacity ?? dto?.AmountOfFilledCapacity,
+  );
   const total =
-    readNumber(dto?.totalCapacity ?? dto?.TotalCapacity) ||
-    readNumber(raw.amountOfFilledCapacity);
+    readNumber(dto?.totalCapacity ?? dto?.TotalCapacity) || filled;
   const male =
     readNumber(dto?.maleCapacity ?? dto?.MaleCapacity) ||
-    readNumber(entryAmounts.maleOverall);
+    readNumber(entryAmounts.maleOverall ?? entryAmounts.MaleOverall) ||
+    readNumber(presentAmounts.maleOverall ?? presentAmounts.MaleOverall);
   const female =
     readNumber(dto?.femaleCapacity ?? dto?.FemaleCapacity) ||
-    readNumber(entryAmounts.femaleOverall);
-  const available = readNumber(dto?.availableCapacity ?? dto?.AvailableCapacity);
+    readNumber(entryAmounts.femaleOverall ?? entryAmounts.FemaleOverall) ||
+    readNumber(presentAmounts.femaleOverall ?? presentAmounts.FemaleOverall);
+  const available = readNumber(
+    dto?.availableCapacity ?? dto?.AvailableCapacity,
+  );
+  const reservedFromPresent =
+    readNumber(presentAmounts.maleCount ?? presentAmounts.MaleCount) +
+    readNumber(presentAmounts.femaleCount ?? presentAmounts.FemaleCount);
   const reserved =
     readNumber(dto?.reservedCapacity ?? dto?.ReservedCapacity) ||
-    readNumber(presentAmounts.maleCount) +
-      readNumber(presentAmounts.femaleCount) ||
-    total - available;
+    reservedFromPresent ||
+    (available > 0 ? Math.max(0, total - available) : 0);
 
   return {
     totalCapacity: total,
@@ -254,6 +372,9 @@ export function mapRoomReportStats(dto: RoomReportStatsDto | null | undefined) {
     femaleCapacity: female,
     reservedCapacity: reserved,
     availableCapacity: available,
+    presentAmounts,
+    entryAmounts,
+    outboundAmounts,
   };
 }
 
@@ -579,12 +700,9 @@ export function useRoomAvailabilities(date: string) {
     queryKey: adminQueryKeys.rooms(date),
     enabled: Boolean(date),
     queryFn: async () => {
-      let raw: unknown;
-      try {
-        raw = await roomApi.getRoomAvailabilitiesByDate(date);
-      } catch {
-        raw = await roomApi.getRoomAvailabilitiesByRange(date, date);
-      }
+      // Range endpoint returns RoomAvailabilityDto with roomId/roomName/ids.
+      // Single-date GET returns a thinner DTO without room UUID — avoid it for management.
+      const raw = await roomApi.getRoomAvailabilitiesByRange(date, date);
       return normalizeRoomAvailabilityList(raw);
     },
   });
@@ -614,36 +732,55 @@ export function useDistinctRoomAvailabilities(requestId: string) {
 
 function normalizeRoomAvailabilityList(raw: unknown): RoomAvailabilityRow[] {
   if (Array.isArray(raw)) {
-    return (raw as RoomAvailabilityDto[]).map(mapRoomAvailabilityDto);
+    return (raw as RoomAvailabilityDto[]).map((dto) =>
+      mapRoomAvailabilityDto(dto),
+    );
   }
   if (raw && typeof raw === "object") {
     const grouped = raw as {
+      // Range: MaleRoomAvailabilities / FemaleRoomAvailabilities
       maleRoomAvailabilities?: RoomAvailabilityDto[];
       femaleRoomAvailabilities?: RoomAvailabilityDto[];
       MaleRoomAvailabilities?: RoomAvailabilityDto[];
       FemaleRoomAvailabilities?: RoomAvailabilityDto[];
+      // Distinct: MaleAvailability / FemaleAvailability
+      maleAvailability?: RoomAvailabilityDto[];
+      femaleAvailability?: RoomAvailabilityDto[];
+      MaleAvailability?: RoomAvailabilityDto[];
+      FemaleAvailability?: RoomAvailabilityDto[];
+      rooms?: RoomAvailabilityDto[];
+      Rooms?: RoomAvailabilityDto[];
       items?: RoomAvailabilityDto[];
       Items?: RoomAvailabilityDto[];
       value?: RoomAvailabilityDto[];
       Value?: RoomAvailabilityDto[];
     };
     const list =
+      grouped.rooms ??
+      grouped.Rooms ??
       grouped.items ??
       grouped.Items ??
       grouped.value ??
       grouped.Value ??
       null;
     if (Array.isArray(list)) {
-      return list.map(mapRoomAvailabilityDto);
+      return list.map((dto) => mapRoomAvailabilityDto(dto));
     }
-    return [
-      ...(grouped.maleRoomAvailabilities ??
-        grouped.MaleRoomAvailabilities ??
-        []),
-      ...(grouped.femaleRoomAvailabilities ??
-        grouped.FemaleRoomAvailabilities ??
-        []),
-    ].map(mapRoomAvailabilityDto);
+    const males = (
+      grouped.maleRoomAvailabilities ??
+      grouped.MaleRoomAvailabilities ??
+      grouped.maleAvailability ??
+      grouped.MaleAvailability ??
+      []
+    ).map((dto) => mapRoomAvailabilityDto(dto, Gender.Male));
+    const females = (
+      grouped.femaleRoomAvailabilities ??
+      grouped.FemaleRoomAvailabilities ??
+      grouped.femaleAvailability ??
+      grouped.FemaleAvailability ??
+      []
+    ).map((dto) => mapRoomAvailabilityDto(dto, Gender.Female));
+    return [...males, ...females];
   }
   return [];
 }
@@ -659,7 +796,38 @@ export function useRoomReportStats(date: string) {
   });
 }
 
-/** Backend often returns plain text "Room Added Successfully" without an id. */
+/** GET /Room — list of all rooms with UUID. */
+export function useAllRooms(enabled = true) {
+  return useQuery({
+    queryKey: ["admin", "rooms", "all"] as const,
+    enabled,
+    queryFn: async () => {
+      const raw = await roomApi.getRooms();
+      if (Array.isArray(raw)) {
+        return (raw as RoomDto[]).map((dto) => ({
+          roomId: readString(
+            (dto as { roomId?: string; RoomId?: string }).roomId ??
+              (dto as { roomId?: string; RoomId?: string }).RoomId ??
+              dto.id ??
+              dto.Id,
+          ),
+          name: readString(dto.name ?? dto.Name),
+          gender: dto.gender ?? dto.Gender,
+          capacity: readNumber(dto.capacity ?? dto.Capacity),
+        }));
+      }
+      return normalizeRoomAvailabilityList(raw).map((row) => ({
+        roomId: row.roomId,
+        name: row.className,
+        gender: row.gender === "زن" ? Gender.Female : Gender.Male,
+        capacity: row.capacity,
+      }));
+    },
+    retry: false,
+  });
+}
+
+/** Extract room UUID from POST /Room response `{ id, roomId, message }`. */
 export function extractRoomId(created: unknown): string {
   if (typeof created === "string") {
     const match = created.match(
@@ -688,6 +856,97 @@ export function extractRoomId(created: unknown): string {
   return "";
 }
 
+function mapRoomDto(dto: RoomDto & { roomId?: string; RoomId?: string }): {
+  roomId: string;
+  name: string;
+  gender: Gender | undefined;
+  capacity: number;
+} {
+  return {
+    roomId: readString(dto.roomId ?? dto.RoomId ?? dto.id ?? dto.Id),
+    name: readString(dto.name ?? dto.Name).trim().toLowerCase(),
+    gender: dto.gender ?? dto.Gender,
+    capacity: readNumber(dto.capacity ?? dto.Capacity),
+  };
+}
+
+/** Resolve a newly created room UUID via GET /Room (if available) or range list. */
+async function resolveRoomIdFromLists(match: {
+  name?: string | null;
+  gender?: Gender;
+  capacity?: number;
+}): Promise<string> {
+  const nameKey = (match.name ?? "").trim().toLowerCase();
+
+  try {
+    const raw = await roomApi.getRooms();
+    const list = Array.isArray(raw)
+      ? (raw as RoomDto[]).map(mapRoomDto)
+      : normalizeRoomAvailabilityList(raw).map((row) => ({
+          roomId: row.roomId,
+          name: row.className.trim().toLowerCase(),
+          gender:
+            row.gender === "زن" ? Gender.Female : Gender.Male,
+          capacity: row.capacity,
+        }));
+
+    const hit = list.find((r) => {
+      if (!r.roomId) return false;
+      if (nameKey && r.name !== nameKey) return false;
+      if (
+        match.gender !== undefined &&
+        r.gender !== undefined &&
+        r.gender !== match.gender
+      ) {
+        return false;
+      }
+      if (
+        typeof match.capacity === "number" &&
+        match.capacity > 0 &&
+        r.capacity > 0 &&
+        r.capacity !== match.capacity
+      ) {
+        return false;
+      }
+      return true;
+    });
+    if (hit?.roomId) return hit.roomId;
+  } catch {
+    // GET /Room is currently 405 — fall through to availabilities list.
+  }
+
+  try {
+    const today = new Date().toISOString().slice(0, 10);
+    const raw = await roomApi.getRoomAvailabilitiesByRange(today, today);
+    const rows = normalizeRoomAvailabilityList(raw);
+    const hit = rows.find((row) => {
+      if (!row.roomId) return false;
+      if (nameKey && row.className.trim().toLowerCase() !== nameKey) {
+        return false;
+      }
+      if (match.gender !== undefined) {
+        const rowGender =
+          row.gender === "زن" ? Gender.Female : Gender.Male;
+        if (rowGender !== match.gender) return false;
+      }
+      if (
+        typeof match.capacity === "number" &&
+        match.capacity > 0 &&
+        row.capacity > 0 &&
+        row.capacity !== match.capacity
+      ) {
+        return false;
+      }
+      return true;
+    });
+    if (hit?.roomId) return hit.roomId;
+  } catch {
+    // ignore
+  }
+
+  return "";
+}
+
 /** POST /Room only — does not attach availability. */
 export function useCreateRoom() {
   return useMutation({
@@ -697,7 +956,10 @@ export function useCreateRoom() {
         gender: body.gender,
         capacity: body.capacity,
       });
-      const roomId = extractRoomId(created);
+      let roomId = extractRoomId(created);
+      if (!roomId) {
+        roomId = await resolveRoomIdFromLists(body);
+      }
       return { created, roomId };
     },
   });
@@ -705,7 +967,7 @@ export function useCreateRoom() {
 
 /**
  * Create room (if needed) then POST RoomAvailability for `availabilityDate` or hook `date`.
- * When backend omits UUID, pass `roomId` from catalog / form.
+ * When backend omits UUID, tries GET /Room (get-all) then date list; else pass `roomId` from form.
  */
 export function useAddRoom(date: string) {
   const queryClient = useQueryClient();
@@ -723,6 +985,13 @@ export function useAddRoom(date: string) {
           capacity: body.capacity,
         });
         roomId = extractRoomId(created);
+        if (!roomId) {
+          roomId = await resolveRoomIdFromLists({
+            name: body.name,
+            gender: body.gender,
+            capacity: body.capacity,
+          });
+        }
       }
 
       if (!roomId) {
@@ -746,6 +1015,9 @@ export function useAddRoom(date: string) {
       void queryClient.invalidateQueries({ queryKey: adminQueryKeys.rooms(date) });
       void queryClient.invalidateQueries({
         queryKey: adminQueryKeys.roomStats(date),
+      });
+      void queryClient.invalidateQueries({
+        queryKey: ["admin", "rooms", "all"],
       });
       if (target !== date) {
         void queryClient.invalidateQueries({
@@ -795,11 +1067,22 @@ export function useRequestedRequestsAmount(date: string) {
 function normalizeGenderStats(raw: unknown): { name: string; value: number }[] {
   if (!raw || typeof raw !== "object") return [];
   const row = raw as Record<string, unknown>;
+  // GenderStatsInAYearDto: maleAmount / femaleAmount
   const male = readNumber(
-    row.maleCount ?? row.MaleCount ?? row.male ?? row.Male,
+    row.maleAmount ??
+      row.MaleAmount ??
+      row.maleCount ??
+      row.MaleCount ??
+      row.male ??
+      row.Male,
   );
   const female = readNumber(
-    row.femaleCount ?? row.FemaleCount ?? row.female ?? row.Female,
+    row.femaleAmount ??
+      row.FemaleAmount ??
+      row.femaleCount ??
+      row.FemaleCount ??
+      row.female ??
+      row.Female,
   );
   if (male || female) {
     return [
@@ -825,21 +1108,38 @@ function normalizeRequestTypeStats(
   raw: unknown,
 ): { name: string; uv: number; pv: number }[] {
   if (!raw || typeof raw !== "object") return [];
+  const row = raw as Record<string, unknown>;
+
+  // BiennialBookingStatsDto — current year = uv, previous year = pv
+  const caravan = readNumber(row.caravanAmount ?? row.CaravanAmount);
+  const individual = readNumber(
+    row.individualAmount ?? row.IndividualAmount,
+  );
+  const prevCaravan = readNumber(
+    row.previousCaravanAmount ?? row.PreviousCaravanAmount,
+  );
+  const prevIndividual = readNumber(
+    row.previousIndividualAmount ?? row.PreviousIndividualAmount,
+  );
+  if (caravan || individual || prevCaravan || prevIndividual) {
+    return [
+      { name: "رزرو کاروان", uv: caravan, pv: prevCaravan },
+      { name: "رزرو عمومی", uv: individual, pv: prevIndividual },
+    ];
+  }
+
   const list = Array.isArray(raw)
     ? raw
-    : ((raw as Record<string, unknown>).items as unknown[]) ??
-      ((raw as Record<string, unknown>).Items as unknown[]) ??
-      [];
+    : (row.items as unknown[]) ?? (row.Items as unknown[]) ?? [];
   if (!Array.isArray(list) || list.length === 0) {
-    const row = raw as Record<string, unknown>;
     const onsite = readNumber(row.onsite ?? row.Onsite ?? row.walkIn);
     const publicRes = readNumber(row.public ?? row.Public ?? row.individual);
-    const caravan = readNumber(row.caravan ?? row.Caravan);
-    if (onsite || publicRes || caravan) {
+    const caravanLegacy = readNumber(row.caravan ?? row.Caravan);
+    if (onsite || publicRes || caravanLegacy) {
       return [
         { name: "رزرو حضوری", uv: onsite, pv: onsite },
         { name: "رزرو عمومی", uv: publicRes, pv: publicRes },
-        { name: "رزرو کاروان", uv: caravan, pv: caravan },
+        { name: "رزرو کاروان", uv: caravanLegacy, pv: caravanLegacy },
       ];
     }
     return [];

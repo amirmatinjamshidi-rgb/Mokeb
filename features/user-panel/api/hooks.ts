@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { individualApi } from "@/lib/api";
+import { individualApi, requestApi } from "@/lib/api";
 import {
   accompanyToAddCommand,
   companionToAccompany,
@@ -12,6 +12,7 @@ import {
 import { persianDateToIsoDate, persianDateToIsoDateTime } from "@/lib/api/dateFormat";
 import { useAuthStore } from "@/features/auth/store/useAuthStore";
 import type { ProfileFormValues } from "@/features/user-panel/lib/profileSchema";
+import { useReservationCapacityStore } from "@/features/reservation/store/useReservationCapacityStore";
 
 export const queryKeys = {
   profile: (id: string) => ["individual", "profile", id] as const,
@@ -135,6 +136,39 @@ export function useIndividualRequests() {
       const list = await individualApi.getIndividualRequests(individualId!);
       const rows = Array.isArray(list) ? list : [];
       return rows.map((dto, index) => requestToReservation(dto, index));
+    },
+  });
+}
+
+/** Cancel / reject request — removes it from active lists for user (and admin). */
+export function useCancelIndividualRequest() {
+  const individualId = useIndividualId();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (requestId: string) => {
+      if (!requestId) throw new Error("شناسه رزرو نامعتبر است.");
+      await requestApi.rejectRequest(requestId);
+      return requestId;
+    },
+    onSuccess: (requestId) => {
+      if (individualId) {
+        void queryClient.invalidateQueries({
+          queryKey: queryKeys.requests(individualId),
+        });
+      }
+      const state = useReservationCapacityStore.getState();
+      if (
+        state.submittedRequestId &&
+        (state.submittedRequestId === requestId ||
+          state.submittedRequestId
+            .toLowerCase()
+            .startsWith(requestId.slice(0, 8).toLowerCase()) ||
+          requestId
+            .toLowerCase()
+            .startsWith(state.submittedRequestId.slice(0, 8).toLowerCase()))
+      ) {
+        state.resetReservation();
+      }
     },
   });
 }

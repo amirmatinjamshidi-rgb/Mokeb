@@ -12,7 +12,7 @@ import {
 } from "@admin-kit/index";
 import { toPersianDigits } from "@/features/shared/lib/format";
 import { useIsAuthenticated } from "@/features/auth/store/useAuthStore";
-import { useIndividualRequests } from "@/features/user-panel/api/hooks";
+import { useIndividualRequests, useCancelIndividualRequest } from "@/features/user-panel/api/hooks";
 import { useDownloadRequestPdf } from "@admin-kit/api/hooks";
 import type { RoomReservationList, ReservationStatus } from "@/lib/api/mappers";
 import {
@@ -115,11 +115,15 @@ function buildColumns(
               icon: Download,
               onClick: () => handlers.onDownload(row),
             },
-            {
-              label: "لغو رزرو",
-              icon: XCircle,
-              onClick: () => handlers.onCancel(row),
-            },
+            ...(row.status === "لغو شده"
+              ? []
+              : [
+                  {
+                    label: "لغو رزرو",
+                    icon: XCircle,
+                    onClick: () => handlers.onCancel(row),
+                  },
+                ]),
           ]}
         />
       ),
@@ -181,6 +185,7 @@ export function MyReservationsContent({ reservations = [] }: Props) {
   }));
 
   const downloadPdf = useDownloadRequestPdf();
+  const cancelRequest = useCancelIndividualRequest();
   const [viewTarget, setViewTarget] = useState<RoomReservationList | null>(null);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
 
@@ -207,15 +212,34 @@ export function MyReservationsContent({ reservations = [] }: Props) {
       }
     },
     onCancel: (row) => {
-      setActionMessage(
-        `لغو رزرو «${row.reservationCode || row.id}» از سمت بک‌اند پشتیبانی نشده؛ با پشتیبانی موکب تماس بگیرید.`,
-      );
+      void (async () => {
+        if (row.status === "لغو شده") return;
+        const ok = window.confirm(
+          `آیا از لغو رزرو «${row.reservationCode}» مطمئن هستید؟`,
+        );
+        if (!ok) return;
+        setActionMessage(null);
+        const requestId = row._apiId;
+        if (!requestId) {
+          setActionMessage("شناسه رزرو برای لغو موجود نیست.");
+          return;
+        }
+        try {
+          await cancelRequest.mutateAsync(requestId);
+          setActionMessage(`رزرو «${row.reservationCode}» لغو شد.`);
+          if (viewTarget?._apiId === row._apiId) setViewTarget(null);
+        } catch (err) {
+          setActionMessage(
+            err instanceof Error ? err.message : "لغو رزرو ناموفق بود.",
+          );
+        }
+      })();
     },
   });
 
   return (
-    <div className="flex w-full flex-col gap-8">
-      <h1 className="flex w-full items-center gap-2 text-2xl font-bold text-gray-500 sm:text-3xl">
+    <div className="flex w-full flex-col gap-20">
+      <h1 dir="rtl" className="flex w-full items-center gap-2 text-2xl font-bold text-gray-500 sm:text-3xl mt-12">
         <ReceiptText className="size-7 sm:size-8" /> رزروهای من
       </h1>
 

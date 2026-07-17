@@ -15,6 +15,17 @@ export enum BloodType {
   ONegative = 7,
 }
 
+/** Mokeb.Domain.Model.Enums.State */
+export enum RequestState {
+  Accepted = 0,
+  Rejected = 1,
+  Requested = 2,
+  DelayInEntrance = 3,
+  DelayInExit = 4,
+  Entered = 5,
+  Exited = 6,
+}
+
 export type ApiEnvelope<T> = {
   success?: boolean;
   Success?: boolean;
@@ -38,16 +49,22 @@ export type LoginResult = {
 export type IndividualPrincipalDto = {
   id?: string;
   Id?: string;
+  /** LookingOnIndividuals / PrincipalDto / CaravanPrincipalDto */
+  principalId?: string;
+  PrincipalId?: string;
   name?: string | null;
   Name?: string | null;
   familyName?: string | null;
   FamilyName?: string | null;
+  fullName?: string | null;
+  FullName?: string | null;
   nationalCode?: string | null;
   NationalCode?: string | null;
   dateOfBirth?: string | null;
   DateOfBirth?: string | null;
-  gender?: Gender;
-  Gender?: Gender;
+  /** Enum number, or string "Male"/"Female" from PrincipalDto.Gender.ToString() */
+  gender?: Gender | string;
+  Gender?: Gender | string;
   passportNumber?: string | null;
   PassportNumber?: string | null;
   gmail?: string | null;
@@ -113,8 +130,11 @@ export type RequestDto = {
 export type TravelerDto = {
   name?: string | null;
   Name?: string | null;
+  /** ReserveRoom TravelerDto uses LastName; entity Travelers uses FamilyName. */
   lastName?: string | null;
   LastName?: string | null;
+  familyName?: string | null;
+  FamilyName?: string | null;
   gender?: Gender;
   Gender?: Gender;
   phoneNumber?: string | null;
@@ -129,20 +149,25 @@ export type TravelerDto = {
   DateOfBirth?: string | null;
 };
 
-export type CheckCapacityResult = {
-  maleCapacity?: number;
-  MaleCapacity?: number;
-  femaleCapacity?: number;
-  FemaleCapacity?: number;
-  overallCapacity?: number;
-  OverallCapacity?: number;
-  emptyCapacity?: number;
-  EmptyCapacity?: number;
-  maleAvailability?: boolean;
-  MaleAvailability?: boolean;
-  femaleAvailability?: boolean;
-  FemaleAvailability?: boolean;
-};
+/** POST /Individual/{id}/CheckCapacity returns a bare boolean (`result.Result`). */
+export type CheckCapacityResult =
+  | boolean
+  | {
+      result?: boolean;
+      Result?: boolean;
+      maleCapacity?: number;
+      MaleCapacity?: number;
+      femaleCapacity?: number;
+      FemaleCapacity?: number;
+      overallCapacity?: number;
+      OverallCapacity?: number;
+      emptyCapacity?: number;
+      EmptyCapacity?: number;
+      maleAvailability?: boolean;
+      MaleAvailability?: boolean;
+      femaleAvailability?: boolean;
+      FemaleAvailability?: boolean;
+    };
 
 export type FaqDto = {
   id?: string;
@@ -351,19 +376,28 @@ export type RoomDto = {
   Capacity?: number;
 };
 
+/** Mokeb.Application.Dtos.RoomAvailabilityDto */
 export type RoomAvailabilityDto = {
   id?: string;
   Id?: string;
+  roomAvailabilityId?: string;
+  RoomAvailabilityId?: string;
   roomId?: string;
   RoomId?: string;
   roomName?: string | null;
   RoomName?: string | null;
   capacity?: number;
   Capacity?: number;
+  overallCapacity?: number;
+  OverallCapacity?: number;
   reserved?: number;
   Reserved?: number;
+  reservedAmount?: number;
+  ReservedAmount?: number;
   available?: number;
   Available?: number;
+  emptyCapacity?: number;
+  EmptyCapacity?: number;
   date?: string | null;
   Date?: string | null;
   enterDate?: string | null;
@@ -372,9 +406,36 @@ export type RoomAvailabilityDto = {
   ExitDate?: string | null;
   gender?: Gender;
   Gender?: Gender;
+  reserveStatus?: string | null;
+  ReserveStatus?: string | null;
+};
+
+export type RoomGenderAmountsDto = {
+  subject?: string | null;
+  Subject?: string | null;
+  maleCount?: number;
+  MaleCount?: number;
+  maleOverall?: number;
+  MaleOverall?: number;
+  femaleCount?: number;
+  FemaleCount?: number;
+  femaleOverall?: number;
+  FemaleOverall?: number;
+  overallPercentage?: number;
+  OverallPercentage?: number;
 };
 
 export type RoomReportStatsDto = {
+  amountOfFilledCapacity?: number;
+  AmountOfFilledCapacity?: number;
+  presentAmounts?: RoomGenderAmountsDto | null;
+  PresentAmounts?: RoomGenderAmountsDto | null;
+  entryAmounts?: RoomGenderAmountsDto | null;
+  EntryAmounts?: RoomGenderAmountsDto | null;
+  outboundAmounts?: RoomGenderAmountsDto | null;
+  OutBoundAmounts?: RoomGenderAmountsDto | null;
+  outBoundAmounts?: RoomGenderAmountsDto | null;
+  /** Legacy flat fields (if backend adds them later). */
   totalCapacity?: number;
   TotalCapacity?: number;
   maleCapacity?: number;
@@ -421,21 +482,41 @@ export type RejectRequestCommand = {
   requestId: string;
 };
 
+/**
+ * Union of RequestedRequestsDto + Incoming/Outgoing response DTOs.
+ * Field names differ per endpoint — mappers read all aliases.
+ */
 export type RequestStatusDto = {
   id?: string;
   Id?: string;
   requestId?: string;
   RequestId?: string;
+  name?: string | null;
+  Name?: string | null;
+  familyName?: string | null;
+  FamilyName?: string | null;
+  fullName?: string | null;
+  FullName?: string | null;
   supervisorName?: string | null;
   SupervisorName?: string | null;
+  phoneNumber?: string | null;
+  PhoneNumber?: string | null;
   totalCapacity?: number;
   TotalCapacity?: number;
+  overallCount?: number;
+  OverallCount?: number;
   maleAmount?: number;
   MaleAmount?: number;
+  maleCount?: number;
+  MaleCount?: number;
   femaleAmount?: number;
   FemaleAmount?: number;
+  femaleCount?: number;
+  FemaleCount?: number;
   entranceDate?: string | null;
   EntranceDate?: string | null;
+  enterDate?: string | null;
+  EnterDate?: string | null;
   exitDate?: string | null;
   ExitDate?: string | null;
   enterTime?: string | null;
@@ -444,8 +525,12 @@ export type RequestStatusDto = {
   ExitTime?: string | null;
   state?: number;
   State?: number;
+  requestState?: number;
+  RequestState?: number;
   stringState?: string | null;
   StringState?: string | null;
+  principalType?: string | null;
+  PrincipalType?: string | null;
   reservationType?: string | null;
   ReservationType?: string | null;
   reservationClass?: string | null;
@@ -460,6 +545,8 @@ export type RequestStatusDto = {
   Mobile?: string | null;
   stayDuration?: number;
   StayDuration?: number;
+  travelers?: TravelerDto[] | null;
+  Travelers?: TravelerDto[] | null;
 };
 
 export type ChangeRequestDateCommand = {

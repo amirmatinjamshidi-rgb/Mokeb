@@ -53,7 +53,7 @@ export function CapacityReservationSection({ className }: Props) {
               </h2>
 
               <p className={cn(sectionSubtitle, "w-full")}>
-                بازهٔ ورود و خروج و تعداد نفرات (۱ تا ۵ نفر، الزامی) را انتخاب
+                بازهٔ ورود و خروج و تعداد نفرات  را انتخاب
                 کنید.
               </p>
             </div>

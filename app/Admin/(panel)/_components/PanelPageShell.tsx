@@ -26,7 +26,7 @@ export function PanelPageShell({
         className,
       )}
     >
-      <h2 className="flex items-center gap-3 text-2xl font-bold leading-9 text-gray-500 sm:text-[1.75rem] sm:leading-10">
+      <h2  className="flex items-center gap-3 text-2xl font-bold leading-9 text-gray-500 sm:text-[1.75rem] sm:leading-10">
         {icon}
         <span>{title}</span>
       </h2>

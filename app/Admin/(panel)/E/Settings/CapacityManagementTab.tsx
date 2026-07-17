@@ -18,6 +18,7 @@ import { cn } from "@admin-kit/shared/lib/utils";
 import {
   useAddRoom,
   useAddRoomAvailability,
+  useAllRooms,
   useChangeRoomAvailabilityDate,
   useDeleteRoom,
   useRoomAvailabilities,
@@ -122,6 +123,7 @@ export function CapacityManagementTab() {
   const { data: rows = [], isLoading, error, refetch } =
     useRoomAvailabilities(dateKey);
   const { data: roomStats } = useRoomReportStats(dateKey);
+  const { data: allRooms = [] } = useAllRooms(true);
   const addRoom = useAddRoom(dateKey);
   const addRoomAvailability = useAddRoomAvailability(dateKey);
   const changeAvailabilityDate = useChangeRoomAvailabilityDate(dateKey);
@@ -129,7 +131,6 @@ export function CapacityManagementTab() {
   const upsertRoom = useRoomCatalogStore((s) => s.upsertRoom);
   const removeCatalogRoom = useRoomCatalogStore((s) => s.removeRoom);
   const findByNameGender = useRoomCatalogStore((s) => s.findByNameGender);
-  const catalogRooms = useRoomCatalogStore((s) => s.rooms);
 
   const [search, setSearch] = useState("");
   const [addOpen, setAddOpen] = useState(false);
@@ -137,8 +138,18 @@ export function CapacityManagementTab() {
   const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
 
-  // Sync known rooms from API rows into local catalog for reuse.
+  // Sync rooms from GET /Room (authoritative UUID list) + day availabilities.
   useEffect(() => {
+    for (const room of allRooms) {
+      const roomId = String(room.roomId ?? "").trim();
+      if (!roomId) continue;
+      upsertRoom({
+        roomId,
+        name: room.name,
+        gender: room.gender ?? Gender.Male,
+        capacity: room.capacity,
+      });
+    }
     for (const row of rows) {
       const roomId = String(row.roomId ?? "").trim();
       if (!roomId) continue;
@@ -149,7 +160,7 @@ export function CapacityManagementTab() {
         capacity: row.capacity,
       });
     }
-  }, [rows, upsertRoom]);
+  }, [allRooms, rows, upsertRoom]);
 
   const filteredRows = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -200,25 +211,34 @@ export function CapacityManagementTab() {
     const gender = values.gender === "زن" ? Gender.Female : Gender.Male;
     const name = values.classLabel.trim() || values.classLevel.trim();
     const capacity = Number(values.capacity) || 0;
-    const typedRoomId = values.roomId.trim();
-    const known =
-      typedRoomId ||
-      findByNameGender(name, gender)?.roomId ||
-      catalogRooms.find((r) => r.gender === gender)?.roomId ||
-      "";
+    const typedRoomId = values.roomId?.trim() ?? "";
+    const catalogId = findByNameGender(name, gender)?.roomId ?? "";
     const targetDate = values.targetDate.trim() || dateKey;
 
     try {
-      // If UUID already known → only attach availability for target date.
-      if (known) {
+      if (typedRoomId) {
+        // Explicit UUID: skip create, attach availability (and resolve via get-all if needed upstream).
+        const result = await addRoom.mutateAsync({
+          name,
+          capacity,
+          gender,
+          roomId: typedRoomId,
+          availabilityDate: targetDate,
+        });
+        upsertRoom({ roomId: result.roomId, name, gender, capacity });
+        setActionMessage(
+          `ظرفیت تاریخ ${targetDate} ثبت شد (${result.roomId.slice(0, 8)}…).`,
+        );
+      } else if (catalogId) {
         await addRoomAvailability.mutateAsync({
-          roomId: known,
+          roomId: catalogId,
           capacity,
           date: targetDate,
         });
-        upsertRoom({ roomId: known, name, gender, capacity });
+        upsertRoom({ roomId: catalogId, name, gender, capacity });
         setActionMessage(`ظرفیت برای تاریخ ${targetDate} فعال شد.`);
       } else {
+        // POST /Room then resolve UUID via get-all / list, then POST availability.
         const result = await addRoom.mutateAsync({
           name,
           capacity,
@@ -249,7 +269,7 @@ export function CapacityManagementTab() {
     setActionError(null);
     setActionMessage(null);
     const roomId = String(
-      values.roomId.trim() || editTarget.roomId || "",
+      values.roomId?.trim() || editTarget.roomId || "",
     ).trim();
     const availabilityId = String(editTarget.id ?? "").trim();
     const targetDate = values.targetDate.trim() || dateKey;

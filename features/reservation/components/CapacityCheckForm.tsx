@@ -177,7 +177,7 @@ export function CapacityCheckForm({ className }: Props) {
     <form
       onSubmit={handleSubmit(onValid)}
       className={cn(
-        "flex w-full flex-col gap-4 md:flex-row md:items-start md:justify-between md:gap-4 lg:items-center lg:gap-6",
+        "flex w-full flex-col gap-4 md:flex-row md:flex-wrap md:items-start lg:flex-nowrap lg:items-center lg:gap-6",
         className,
       )}
     >
@@ -251,8 +251,9 @@ export function CapacityCheckForm({ className }: Props) {
                 ),
               }}
               sx={{
-                minWidth: { xs: "100%", md: 380 },
-                width: { xs: "100%", md: 380 },
+                flex: 1,
+                minWidth: { xs: "100%", md: 280 },
+                width: "100%",
                 "& .MuiOutlinedInput-root": {
                   height: CONTROL_H,
                   borderRadius: "12px",

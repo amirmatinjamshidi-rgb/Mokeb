@@ -1,15 +1,10 @@
 import type { Gender, BloodType } from "./types";
+import { RequestState } from "./types";
 import type { IndividualPrincipalDto, CompanionDto, RequestDto } from "./types";
 import type { UserProfile } from "@/features/user-panel/types";
 import type { Accompany } from "@/features/user-panel/lib/accompanySchema";
 import type { PilgrimRow } from "@/features/shared/components/PilgrimsTable";
 import type { BloodTypeOption } from "@/features/shared/constants/bloodTypes";
-
-export type ReservationStatus =
-  | "در انتظار تایید"
-  | "رزرو فعال"
-  | "لغو شده"
-  | "عدم حضور";
 import type { ProfileFormValues } from "@/features/user-panel/lib/profileSchema";
 import type { TravelerDto } from "./types";
 import type { PilgrimFormValues } from "@/features/reservation/components/registerForm/pilgrimRegistrationSchema";
@@ -17,6 +12,12 @@ import {
   isoDateToPersianDate,
   persianDateToIsoDate,
 } from "./dateFormat";
+
+export type ReservationStatus =
+  | "در انتظار تایید"
+  | "رزرو فعال"
+  | "لغو شده"
+  | "عدم حضور";
 
 function str(value: string | null | undefined, fallback = "") {
   return value ?? fallback;
@@ -67,7 +68,7 @@ export function bloodTypeToApi(label: string): BloodType | undefined {
 }
 
 export function individualToUserProfile(dto: IndividualPrincipalDto): UserProfile {
-  const id = dto.id ?? dto.Id ?? "";
+  const id = dto.principalId ?? dto.PrincipalId ?? dto.id ?? dto.Id ?? "";
   const name = [dto.name ?? dto.Name, dto.familyName ?? dto.FamilyName]
     .filter(Boolean)
     .join(" ")
@@ -235,7 +236,9 @@ function mapTravelers(dto: RequestDto): PilgrimRow[] {
     const pp = str(t.passportNumber ?? t.PassportNumber);
     return {
       firstName: str(t.name ?? t.Name),
-      lastName: str(t.lastName ?? t.LastName),
+      lastName: str(
+        t.lastName ?? t.LastName ?? t.familyName ?? t.FamilyName,
+      ),
       gender: genderFromApi(t.gender ?? t.Gender),
       nationalCode: nc,
       passportNumber: pp,
@@ -254,8 +257,9 @@ function mapRequestStatus(
   stringState?: string | null,
 ): RoomReservationList["status"] {
   const label = (stringState ?? "").toLowerCase();
+  // Backend State: Accepted=0, Rejected=1, Requested=2, …
   if (
-    state === 3 ||
+    state === RequestState.Rejected ||
     label.includes("reject") ||
     label.includes("cancel") ||
     label.includes("لغو") ||
@@ -265,14 +269,18 @@ function mapRequestStatus(
   }
   if (label.includes("no-show") || label.includes("عدم")) return "عدم حضور";
   if (
-    state === 2 ||
+    state === RequestState.Accepted ||
+    state === RequestState.Entered ||
+    state === RequestState.Exited ||
+    state === RequestState.DelayInEntrance ||
+    state === RequestState.DelayInExit ||
     label.includes("accept") ||
     label.includes("approved") ||
     (label.includes("تایید") && !label.includes("انتظار"))
   ) {
     return "رزرو فعال";
   }
-  // Pending / requested (state 0 or 1, or empty stringState)
+  // Requested (2) or unknown → pending
   return "در انتظار تایید";
 }
 
