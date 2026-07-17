@@ -1,10 +1,13 @@
 import { z } from "zod";
-import { zIranMobile, zTextNoDigits } from "./formZodRules";
+import { zIranMobile } from "./formZodRules";
 
 /** Settings caravan card — fields mapped to ChangePrincipal where possible. */
 export const karvanInformationSchema = z.object({
   caravanName: z.string(),
-  supervisorName: zTextNoDigits("نام مسئول کاروان"),
+  supervisorName: z
+    .string()
+    .trim()
+    .min(2, "نام مسئول کاروان الزامی است"),
   mobile: zIranMobile,
   landline: z.string(),
   address: z.string(),

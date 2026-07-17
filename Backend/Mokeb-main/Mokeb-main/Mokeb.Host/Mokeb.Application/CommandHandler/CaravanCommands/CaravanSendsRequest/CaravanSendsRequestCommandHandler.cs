@@ -20,12 +20,13 @@ namespace Mokeb.Application.CommandHandler.CaravanCommands.CaravanSendsRequest
         public async Task<CaravanSendsRequestCommandResponse> Handle(CaravanSendsRequestCommand request, CancellationToken cancellationToken)
         {
             var caravan = await GetCaravan(request.CaravanId, cancellationToken);
-            caravan.AddRequest(request.ToRequest());
+            var requestEntity = request.ToRequest();
+            caravan.AddRequest(requestEntity);
             var savingResult = await _unitOfWork.Commit(cancellationToken);
             savingResult.ThrowIfNoChanges<NoChangesApplicationException>();
             return ResponseModel
                 .Response()
-                .WithResult(true);
+                .WithRequestId(requestEntity.Id);
         }
         #region Private Methods
         private async Task<CaravanPrincipal> GetCaravan(Guid caravanId, CancellationToken ct)

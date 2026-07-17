@@ -103,6 +103,7 @@ export function individualToProfileForm(
     relativePhone: str(
       dto.emergencyPhoneNumber ?? dto.EmergencyPhoneNumber,
     ),
+    gmail: str(dto.gmail ?? dto.Gmail),
   };
 }
 
@@ -124,7 +125,7 @@ export function profileFormToChangeCommand(
 } {
   const parts = values.fullName.trim().split(/\s+/).filter(Boolean);
   const name = parts[0] ?? "";
-  const familyName = parts.slice(1).join(" ");
+  const familyName = parts.slice(1).join(" ") || name;
   return {
     individualId,
     name,
@@ -132,10 +133,10 @@ export function profileFormToChangeCommand(
     nationalCode: values.nationalCode,
     dateOfBirth: persianDateToIsoDate(values.birthDate),
     gender: genderToApi(values.gender),
-    passportNumber: values.passportNumber,
-    gmail: "",
+    passportNumber: values.passportNumber || values.nationalCode || "N/A",
+    gmail: values.gmail.trim(),
     phoneNumber: values.mobile1,
-    emergencyPhoneNumber: values.relativePhone,
+    emergencyPhoneNumber: values.relativePhone || values.mobile1,
     bloodType: bloodTypeToApi(values.bloodType),
   };
 }
@@ -162,6 +163,7 @@ export function companionToAccompany(dto: CompanionDto, index: number): Accompan
     mobile1: str(dto.phoneNumber ?? dto.PhoneNumber),
     mobile2: "",
     relativePhone: str(dto.emergencyPhoneNumber ?? dto.EmergencyPhoneNumber),
+    gmail: "",
   };
 }
 
@@ -312,10 +314,17 @@ export function requestToReservation(
     (maleCount + femaleCount > 0
       ? maleCount + femaleCount
       : pilgrims.length);
+  const codeFromApi = str(
+    dto.reservationCode ?? dto.ReservationCode,
+  ).trim();
+  const reservationCode = codeFromApi
+    ? codeFromApi.slice(0, 16).toUpperCase()
+    : String(id).slice(0, 8).toUpperCase();
+
   return {
     id: numericId,
     radif: index + 1,
-    reservationCode: String(id).slice(0, 8).toUpperCase(),
+    reservationCode,
     checkIn: isoDateToPersianDate(
       str(dto.enterTime ?? dto.EnterTime).slice(0, 10),
     ),

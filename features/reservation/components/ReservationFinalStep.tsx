@@ -10,6 +10,7 @@ import { ROUTES } from "@/features/shared/config/navigation";
 import { cn } from "@/features/shared/lib/utils";
 import { useIndividualRequests } from "@/features/user-panel/api/hooks";
 import { useDownloadRequestPdf } from "@admin-kit/api/hooks";
+import { RequestState } from "@/lib/api/types";
 import { SiteReservationContentRow } from "../layouts/SiteReservationLayout";
 import { useReservationCapacityStore } from "../store/useReservationCapacityStore";
 import ReservationSummaryFinal from "./registerForm/ReservationSummaryFinal";
@@ -35,8 +36,23 @@ function resolveRequestStatus(
       reserveCode.toLowerCase().includes(r.id.slice(0, 8).toLowerCase()),
   );
   if (!match) return submittedRequestId ? "pending" : "unknown";
-  if (match.rawState === 3 || match.status === "لغو شده") return "rejected";
-  if (match.rawState === 2 || match.status === "رزرو فعال") return "approved";
+  // Backend State: Accepted=0, Rejected=1, Requested=2, …
+  if (
+    match.rawState === RequestState.Rejected ||
+    match.status === "لغو شده"
+  ) {
+    return "rejected";
+  }
+  if (
+    match.rawState === RequestState.Accepted ||
+    match.rawState === RequestState.Entered ||
+    match.rawState === RequestState.Exited ||
+    match.rawState === RequestState.DelayInEntrance ||
+    match.rawState === RequestState.DelayInExit ||
+    match.status === "رزرو فعال"
+  ) {
+    return "approved";
+  }
   return "pending";
 }
 

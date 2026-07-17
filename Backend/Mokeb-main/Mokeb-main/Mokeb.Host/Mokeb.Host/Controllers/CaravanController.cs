@@ -123,7 +123,7 @@ namespace Mokeb.Host.Controllers
             command.Validate();
             var result = await _mediator.Send(command, ct);
             if (result.Result)
-                return Ok("درخواست با موفقیت ارسال شد");
+                return Ok(result);
             return BadRequest("درخواست ارسال نشد !");
         }
         [HttpGet("{caravanId}/Requests")]

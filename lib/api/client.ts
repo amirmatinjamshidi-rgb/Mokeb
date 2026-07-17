@@ -56,7 +56,7 @@ export function unwrapApiResult<T>(data: unknown): T {
   if (typeof data !== "object") {
     return data as T;
   }
-  const envelope = data as ApiEnvelope<T>;
+  const envelope = data as ApiEnvelope<T> & Record<string, unknown>;
   const success = envelope.success ?? envelope.Success;
   if (success === false) {
     throw new ApiError(
@@ -65,17 +65,20 @@ export function unwrapApiResult<T>(data: unknown): T {
       data,
     );
   }
-  if ("result" in envelope && envelope.result !== undefined) {
-    return envelope.result as T;
+
+  const result = envelope.result ?? envelope.Result;
+  const response = envelope.response ?? envelope.Response;
+
+  // Boolean Result is a success flag — keep the full payload so RequestId/Id remain.
+  if (typeof result === "boolean") {
+    return data as T;
   }
-  if ("Result" in envelope && envelope.Result !== undefined) {
-    return envelope.Result as T;
+
+  if (result !== undefined) {
+    return result as T;
   }
-  if ("response" in envelope && envelope.response !== undefined) {
-    return envelope.response as T;
-  }
-  if ("Response" in envelope && envelope.Response !== undefined) {
-    return envelope.Response as T;
+  if (response !== undefined) {
+    return response as T;
   }
   return data as T;
 }

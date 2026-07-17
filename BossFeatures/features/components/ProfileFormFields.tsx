@@ -15,6 +15,7 @@ import {
   ContactRound,
   Edit,
   HeartPulse,
+  Mail,
   MapPin,
   Phone,
   ShieldCheck,
@@ -114,6 +115,7 @@ type Props = {
   showEditButton?: boolean;
   isEditing?: boolean;
   onEditToggle?: () => void;
+  showGmail?: boolean;
 };
 
 export function ProfileFormFields({
@@ -124,6 +126,7 @@ export function ProfileFormFields({
   showEditButton = false,
   isEditing = false,
   onEditToggle,
+  showGmail = true,
 }: Props) {
   const birthDate = watch("birthDate");
   const passportExpiry = watch("passportExpiry");
@@ -404,7 +407,19 @@ export function ProfileFormFields({
               maxLength={15}
             />
           </FieldCell>
-          <FieldCell />
+          {showGmail ? (
+            <FieldCell>
+              <FormTextInput
+                name="gmail"
+                control={control}
+                placeholder="ایمیل (Gmail)"
+                rightIcon={Mail}
+                disabled={disabled}
+              />
+            </FieldCell>
+          ) : (
+            <FieldCell />
+          )}
         </FormRow>
       </section>
     </>

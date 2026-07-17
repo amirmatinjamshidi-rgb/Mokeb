@@ -20,9 +20,15 @@ namespace Mokeb.Application.CommandHandler.IndividualCommands.ReserveRoom
             ExitTime = exitTime;
             return this;
         }
+        public ReserveRoomCommandResponse WithRequestId(Guid requestId)
+        {
+            RequestId = requestId;
+            return this;
+        }
         public List<Travelers> Travelers { get; set; }
         public DateTime EntraceTime { get; set; }
         public DateTime ExitTime { get; set; }
-
+        public Guid RequestId { get; set; }
+        public Guid Id => RequestId;
     }
 }

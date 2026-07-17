@@ -17,6 +17,7 @@ export const mockZaer: Zaer[] = [
     mobile1: "09121234567",
     mobile2: "09129876543",
     relativePhone: "02144556677",
+    gmail: "",
   },
   {
     id: 2,
@@ -34,5 +35,6 @@ export const mockZaer: Zaer[] = [
     mobile1: "09121112222",
     mobile2: "09123334444",
     relativePhone: "02133445566",
+    gmail: "",
   },
 ];

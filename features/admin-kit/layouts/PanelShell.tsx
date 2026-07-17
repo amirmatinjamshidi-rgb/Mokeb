@@ -97,7 +97,11 @@ export function PanelShell({ children }: Props) {
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col" dir="ltr">
-        <NavBar menuOpen={sidebarOpen} onMenuToggle={toggleSidebar} />
+        <NavBar
+          menuOpen={sidebarOpen}
+          onMenuToggle={toggleSidebar}
+          settingsHref={ROUTES.settings}
+        />
 
         <main className="flex-1 overflow-x-hidden">{children}</main>
       </div>

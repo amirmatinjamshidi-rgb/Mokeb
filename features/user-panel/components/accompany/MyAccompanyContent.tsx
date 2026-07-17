@@ -29,6 +29,7 @@ import { AccompanyFormModal } from "./AccompanyFormModal";
 import { AccompanyViewModal } from "./AccompanyViewModal";
 import type { ReservationFilterValues } from "../reservations/ReservationFilters";
 import { individualApi } from "@/lib/api";
+import { companionToAccompany } from "@/lib/api/mappers";
 import { useAuthStore } from "@/features/auth/store/useAuthStore";
 
 function persianCell(value: string | number) {
@@ -190,9 +191,15 @@ export function MyAccompanyContent({ initialAccompanies = [] }: Props) {
       return;
     }
     try {
-      await individualApi.uploadCompanionsExcel(principalId, file);
+      const raw = await individualApi.uploadCompanionsExcel(principalId, file);
+      if (Array.isArray(raw)) {
+        queryClient.setQueryData(
+          queryKeys.companions(principalId, filters.search),
+          raw.map((dto, index) => companionToAccompany(dto, index)),
+        );
+      }
       void queryClient.invalidateQueries({
-        queryKey: queryKeys.companions(principalId),
+        queryKey: ["individual", "companions", principalId],
       });
     } catch (err) {
       setActionError(
@@ -210,8 +217,8 @@ export function MyAccompanyContent({ initialAccompanies = [] }: Props) {
     "flex h-[40px] w-110 justify-center inline-flex items-center gap-2 rounded-xl border border-[#175E47] px-4 text-sm font-medium leading-[22px] text-[#175E47] transition-colors hover:bg-[#F5F9F6]";
 
   return (
-    <div className="flex w-full flex-col gap-20">
-      <h1 dir="rtl" className="flex w-full items-center gap-2 text-2xl font-bold text-gray-500 sm:text-3xl mt-12">
+    <div className="flex w-full flex-col gap-20" dir="rtl">
+      <h1 className="flex w-full items-center gap-2 text-2xl font-bold text-gray-500 sm:text-3xl mt-12">
         <Users className="size-7 sm:size-8" /> همراهان من
       </h1>
 
@@ -267,7 +274,7 @@ export function MyAccompanyContent({ initialAccompanies = [] }: Props) {
         </div>
       </div>
 
-      <Table data={tableRows} columns={columns} size="lg" className="w-full" />
+      <Table data={tableRows} columns={columns} size="lg" className="w-full" dir="rtl" />
 
       <TablePagination
         currentPage={currentPage}
