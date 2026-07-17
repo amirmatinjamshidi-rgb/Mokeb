@@ -291,6 +291,7 @@ export function MyReservationsContent({
     onDownload: (row) => {
       setActionError(null);
       if (onDownload) onDownload(row);
+      else setActionMessage("دانلود رسید در دسترس نیست.");
     },
     onCancel: (row) => void handleCancel(row),
   });
@@ -304,19 +305,18 @@ export function MyReservationsContent({
   }
 
   return (
-    <div className="flex w-full flex-col gap-12 px-10 py-8">
+    <div className="flex w-full flex-col gap-12 px-10 py-8" dir="rtl">
       <h1 className="flex w-full items-center gap-2 text-2xl font-bold text-gray-500 sm:text-3xl">
         <Image src={ReceiptText} alt="receipt" width={24} height={24} /> رزروهای
         من
       </h1>
 
-      <ReservationFilters values={filters} onChange={setFilters} />
+      {actionMessage ? (
+        <p className="text-sm text-[#175E47]">{actionMessage}</p>
+      ) : null}
 
       {cancellingId ? (
         <p className="text-sm text-[#61756F]">در حال لغو رزرو…</p>
-      ) : null}
-      {actionMessage ? (
-        <p className="text-sm text-[#175E47]">{actionMessage}</p>
       ) : null}
       {actionError ? (
         <p className="text-sm text-[#D22B23]">{actionError}</p>
@@ -328,6 +328,8 @@ export function MyReservationsContent({
           onClose={() => setViewTarget(null)}
         />
       ) : null}
+
+      <ReservationFilters values={filters} onChange={setFilters} />
 
       <Table
         data={tableRows}

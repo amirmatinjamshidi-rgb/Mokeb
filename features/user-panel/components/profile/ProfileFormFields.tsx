@@ -16,6 +16,7 @@ import {
   Edit,
   Globe,
   HeartPulse,
+  Mail,
   MapPin,
   Phone,
   ShieldCheck,
@@ -109,6 +110,8 @@ type Props = {
   showEditButton?: boolean;
   isEditing?: boolean;
   onEditToggle?: () => void;
+  /** Hide email on companion/pilgrim forms (API does not accept gmail there). */
+  showGmail?: boolean;
 };
 
 export function ProfileFormFields({
@@ -119,6 +122,7 @@ export function ProfileFormFields({
   showEditButton = false,
   isEditing = false,
   onEditToggle,
+  showGmail = true,
 }: Props) {
   const birthDate = watch("birthDate");
   const passportExpiry = watch("passportExpiry");
@@ -375,7 +379,19 @@ export function ProfileFormFields({
               disabled={disabled}
             />
           </FieldCell>
-          <FieldCell />
+          {showGmail ? (
+            <FieldCell>
+              <FormTextInput
+                name="gmail"
+                control={control}
+                placeholder="ایمیل (Gmail)"
+                rightIcon={Mail}
+                disabled={disabled}
+              />
+            </FieldCell>
+          ) : (
+            <FieldCell />
+          )}
         </FormRow>
       </section>
     </>

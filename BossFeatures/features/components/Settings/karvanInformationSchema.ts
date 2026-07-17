@@ -2,15 +2,17 @@ import { z } from "zod";
 import {
   zIranMobile,
   zIranPhoneDigits,
-  zTextNoDigits,
 } from "@/boss-features/lib/formZodRules";
 
 export const karvanInformationSchema = z.object({
-  caravanName: zTextNoDigits("نام کاروان"),
-  supervisorName: zTextNoDigits("نام مسئول کاروان"),
+  caravanName: z.string(),
+  supervisorName: z
+    .string()
+    .trim()
+    .min(2, "نام مسئول کاروان الزامی است"),
   mobile: zIranMobile,
   landline: z.union([z.literal(""), zIranPhoneDigits]),
-  address: z.string().min(1, "نشانی الزامی است"),
+  address: z.string(),
   gender: z.enum(["male", "female", "mixed"], {
     message: "جنسیت الزامی است",
   }),

@@ -10,6 +10,7 @@ namespace Mokeb.Domain.Model.Entities
         private List<Travelers> _travelers = new List<Travelers>();
         public Request(uint maleCount, uint femaleCount, DateTime enterTime, DateTime exitTime)
         {
+            Id = Guid.NewGuid();
             MaleCount = maleCount;
             FemaleCount = femaleCount;
             EnterTime = enterTime;

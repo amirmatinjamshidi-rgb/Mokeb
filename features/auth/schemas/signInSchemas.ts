@@ -83,7 +83,8 @@ export const signInProfileSchema = z.object({
     .string()
     .trim()
     .min(1, "ایمیل الزامی است")
-    .email("ایمیل معتبر وارد کنید"),
+    .email("ایمیل معتبر وارد کنید")
+    .regex(/^[a-zA-Z0-9._%+-]+@gmail\.com$/i, "فقط ایمیل Gmail مجاز است"),
   phoneNumber: iranMobile,
   emergencyPhoneNumber: iranMobile,
   bloodType: z.enum(BLOOD_TYPES, {

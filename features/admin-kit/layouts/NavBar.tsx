@@ -1,22 +1,23 @@
 "use client";
 
+import Link from "next/link";
 import { Bell, Bolt, Menu } from "lucide-react";
-import Image from "next/image";
 
 import { NavbarSearchField } from "@admin-kit/ui/NavbarSearchField";
 
 type Props = {
   userName?: string;
-  avatarSrc?: string;
   onMenuToggle?: () => void;
   menuOpen?: boolean;
+  /** Panel settings route (Bolt icon). */
+  settingsHref?: string;
 };
 
 export function NavBar({
   userName = "مدیر سیستم",
-  avatarSrc = "/profile-panel.jpg",
   onMenuToggle,
   menuOpen = false,
+  settingsHref,
 }: Props) {
   return (
     <div
@@ -38,21 +39,22 @@ export function NavBar({
       </div>
 
       <div className="flex shrink-0 items-center gap-x-3 sm:gap-x-5 lg:gap-x-7">
-        <Bolt stroke="#61756F" className="size-5 shrink-0" aria-hidden />
+        {settingsHref ? (
+          <Link
+            href={settingsHref}
+            aria-label="تنظیمات"
+            className="rounded-lg p-1 text-[#61756F] transition-colors hover:bg-[#F5F9F6]"
+          >
+            <Bolt stroke="#61756F" className="size-5 shrink-0" aria-hidden />
+          </Link>
+        ) : (
+          <Bolt stroke="#61756F" className="size-5 shrink-0" aria-hidden />
+        )}
         <Bell
           className="size-5 shrink-0 cursor-pointer text-[#61756F]"
           aria-hidden
         />
-        <div className="flex items-center gap-x-2 sm:gap-x-3">
-          <p className="hidden text-xs text-gray-500 sm:block">{userName}</p>
-          <Image
-            src={avatarSrc}
-            alt="Profile"
-            width={32}
-            height={32}
-            className="size-8 rounded-full object-cover"
-          />
-        </div>
+        <p className="hidden text-xs text-gray-500 sm:block">{userName}</p>
       </div>
     </div>
   );

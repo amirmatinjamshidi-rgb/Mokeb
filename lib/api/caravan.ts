@@ -140,10 +140,13 @@ export async function uploadPilgrimsExcel(caravanId: string, file: File) {
   const form = new FormData();
   form.append("CaravanId", caravanId);
   form.append("ExcelFile", file);
-  return apiRequest<void>(`/Caravan/${caravanId}/Pilgrims/File`, {
-    method: "POST",
-    rawBody: form,
-  });
+  return apiRequest<CompanionDto[] | void>(
+    `/Caravan/${caravanId}/Pilgrims/File`,
+    {
+      method: "POST",
+      rawBody: form,
+    },
+  );
 }
 
 export async function getCaravanRequests(caravanId: string) {

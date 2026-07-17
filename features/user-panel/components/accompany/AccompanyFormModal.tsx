@@ -5,8 +5,8 @@ import { X } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import {
+  companionProfileSchema,
   profileDefaultValues,
-  profileSchema,
   type ProfileFormValues,
 } from "../../lib/profileSchema";
 import { ProfileFormFields } from "../profile/ProfileFormFields";
@@ -21,7 +21,7 @@ export function AccompanyFormModal({ open, onClose, onSubmit }: Props) {
   const [submitting, setSubmitting] = useState(false);
   const { control, handleSubmit, setValue, watch, reset } =
     useForm<ProfileFormValues>({
-      resolver: zodResolver(profileSchema),
+      resolver: zodResolver(companionProfileSchema),
       defaultValues: profileDefaultValues,
     });
 
@@ -67,6 +67,7 @@ export function AccompanyFormModal({ open, onClose, onSubmit }: Props) {
             setValue={setValue}
             watch={watch}
             disabled={submitting}
+            showGmail={false}
           />
 
           <div className="flex justify-end gap-3">

@@ -47,7 +47,8 @@ namespace Mokeb.Application.CommandHandler.IndividualCommands.ReserveRoom
                 .Response()
                 .WithTravelers(individualRequest.Travelers.ToList())
                 .WithEntranceTime(request.DateOfEntrance)
-                .WithExitTime(request.DateOfExit);
+                .WithExitTime(request.DateOfExit)
+                .WithRequestId(individualRequest.Id);
         }
 
 
