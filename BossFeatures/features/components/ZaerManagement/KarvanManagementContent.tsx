@@ -96,7 +96,7 @@ type Props = {
   isLoading?: boolean;
   onAdd?: (values: ProfileFormValues) => Promise<unknown>;
   onDelete?: (row: Accompany) => Promise<unknown>;
-  onExcelUpload?: (file: File) => void;
+  onExcelUpload?: (file: File) => void | Promise<unknown>;
 };
 
 export function MyAccompanyContent({
@@ -185,11 +185,16 @@ export function MyAccompanyContent({
     }
   };
 
-  const handleExcelUpload = (file: File) => {
-    if (onExcelUpload) {
-      onExcelUpload(file);
-    } else {
-      console.log("excel upload", file.name);
+  const handleExcelUpload = async (file: File) => {
+    setActionError(null);
+    try {
+      if (onExcelUpload) {
+        await onExcelUpload(file);
+      }
+    } catch (err) {
+      setActionError(
+        err instanceof Error ? err.message : "بارگذاری فایل ناموفق بود.",
+      );
     }
   };
 

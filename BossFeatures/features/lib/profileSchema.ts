@@ -2,6 +2,12 @@ import { z } from "zod";
 
 import { BLOOD_TYPES } from "@/features/shared/constants/bloodTypes";
 
+const gmailField = z
+  .string()
+  .trim()
+  .min(1, "ایمیل الزامی است")
+  .email("ایمیل معتبر وارد کنید");
+
 /** Profile edit — only API-backed fields are required; others may stay empty. */
 export const profileSchema = z.object({
   fullName: z.string().trim().min(2, "نام و نام خانوادگی الزامی است"),
@@ -28,6 +34,12 @@ export const profileSchema = z.object({
     .string()
     .trim()
     .regex(/^09\d{9}$/, "تلفن اضطراری باید ۱۱ رقم و با ۰۹ شروع شود"),
+  gmail: gmailField,
+});
+
+/** Companion / pilgrim forms — email is not sent to Pilgrims APIs. */
+export const companionProfileSchema = profileSchema.extend({
+  gmail: z.string().trim(),
 });
 
 export type ProfileFormValues = z.infer<typeof profileSchema>;
@@ -47,4 +59,5 @@ export const profileDefaultValues: ProfileFormValues = {
   mobile1: "",
   mobile2: "",
   relativePhone: "",
+  gmail: "",
 };

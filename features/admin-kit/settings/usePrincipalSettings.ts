@@ -92,6 +92,46 @@ function splitName(fullName: string) {
   };
 }
 
+function readGmail(
+  dto: IndividualPrincipalDto | CaravanPrincipalDto | null | undefined,
+): string {
+  if (!dto) return "";
+  return (
+    (dto as IndividualPrincipalDto).gmail ??
+    (dto as IndividualPrincipalDto).Gmail ??
+    ""
+  ).trim();
+}
+
+function buildChangePayload(
+  values: {
+    name: string;
+    familyName: string;
+    nationalCode: string;
+    dateOfBirth?: string;
+    gender: ReturnType<typeof genderToApi>;
+    passportNumber: string;
+    gmail: string;
+    phoneNumber: string;
+    emergencyPhoneNumber: string;
+    bloodType: ReturnType<typeof bloodTypeToApi>;
+  },
+) {
+  return {
+    name: values.name,
+    familyName: values.familyName,
+    nationalCode: values.nationalCode || "",
+    dateOfBirth: values.dateOfBirth || undefined,
+    gender: values.gender,
+    passportNumber: values.passportNumber || "",
+    // Backend [Required] — never send empty when we already have a stored value.
+    gmail: values.gmail.trim(),
+    phoneNumber: values.phoneNumber || "",
+    emergencyPhoneNumber: values.emergencyPhoneNumber || "",
+    bloodType: values.bloodType,
+  };
+}
+
 export function usePrincipalSettingsProfile() {
   const ctx = usePrincipalContext();
 
@@ -133,34 +173,33 @@ export function useSaveKarvanInformation() {
         values.gender === "female"
           ? genderToApi("female")
           : genderToApi("male");
+      const payload = buildChangePayload({
+        name,
+        familyName,
+        nationalCode: currentProfile.nationalCode || "",
+        dateOfBirth: persianDateToIsoDate(currentProfile.birthDate) || undefined,
+        gender,
+        passportNumber: currentProfile.passportNumber || "",
+        gmail: currentProfile.gmail || readGmail(current),
+        phoneNumber: values.mobile,
+        emergencyPhoneNumber: currentProfile.relativePhone || "",
+        bloodType: bloodTypeToApi(currentProfile.bloodType),
+      });
+      if (!payload.gmail) {
+        throw new Error(
+          "ایمیل حساب خالی است. ابتدا ایمیل را در ویرایش اطلاعات حساب تکمیل کنید.",
+        );
+      }
 
       if (ctx.isCaravan) {
         await caravanApi.changeCaravanPrincipal(ctx.principalId, {
           caravanId: ctx.principalId,
-          name,
-          familyName,
-          nationalCode: currentProfile.nationalCode || "",
-          dateOfBirth: persianDateToIsoDate(currentProfile.birthDate) || undefined,
-          gender,
-          passportNumber: currentProfile.passportNumber || "",
-          gmail: "",
-          phoneNumber: values.mobile,
-          emergencyPhoneNumber: currentProfile.relativePhone || "",
-          bloodType: bloodTypeToApi(currentProfile.bloodType),
+          ...payload,
         });
       } else {
         await individualApi.changeIndividualProfile(ctx.principalId, {
           individualId: ctx.principalId,
-          name,
-          familyName,
-          nationalCode: currentProfile.nationalCode || "",
-          dateOfBirth: persianDateToIsoDate(currentProfile.birthDate) || undefined,
-          gender,
-          passportNumber: currentProfile.passportNumber || "",
-          gmail: "",
-          phoneNumber: values.mobile,
-          emergencyPhoneNumber: currentProfile.relativePhone || "",
-          bloodType: bloodTypeToApi(currentProfile.bloodType),
+          ...payload,
         });
       }
 
@@ -193,34 +232,33 @@ export function useSaveRepresentative() {
       const current = await fetchPrincipal(ctx.principalId, ctx.isCaravan);
       const currentProfile = individualToProfileForm(current);
       const { name, familyName } = splitName(values.fullName);
+      const payload = buildChangePayload({
+        name,
+        familyName,
+        nationalCode: currentProfile.nationalCode || "",
+        dateOfBirth: persianDateToIsoDate(currentProfile.birthDate) || undefined,
+        gender: genderToApi(currentProfile.gender),
+        passportNumber: currentProfile.passportNumber || "",
+        gmail: currentProfile.gmail || readGmail(current),
+        phoneNumber: values.mobile,
+        emergencyPhoneNumber: currentProfile.relativePhone || "",
+        bloodType: bloodTypeToApi(currentProfile.bloodType),
+      });
+      if (!payload.gmail) {
+        throw new Error(
+          "ایمیل حساب خالی است. ابتدا ایمیل را در ویرایش اطلاعات حساب تکمیل کنید.",
+        );
+      }
 
       if (ctx.isCaravan) {
         await caravanApi.changeCaravanPrincipal(ctx.principalId, {
           caravanId: ctx.principalId,
-          name,
-          familyName,
-          nationalCode: currentProfile.nationalCode || "",
-          dateOfBirth: persianDateToIsoDate(currentProfile.birthDate) || undefined,
-          gender: genderToApi(currentProfile.gender),
-          passportNumber: currentProfile.passportNumber || "",
-          gmail: "",
-          phoneNumber: values.mobile,
-          emergencyPhoneNumber: currentProfile.relativePhone || "",
-          bloodType: bloodTypeToApi(currentProfile.bloodType),
+          ...payload,
         });
       } else {
         await individualApi.changeIndividualProfile(ctx.principalId, {
           individualId: ctx.principalId,
-          name,
-          familyName,
-          nationalCode: currentProfile.nationalCode || "",
-          dateOfBirth: persianDateToIsoDate(currentProfile.birthDate) || undefined,
-          gender: genderToApi(currentProfile.gender),
-          passportNumber: currentProfile.passportNumber || "",
-          gmail: "",
-          phoneNumber: values.mobile,
-          emergencyPhoneNumber: currentProfile.relativePhone || "",
-          bloodType: bloodTypeToApi(currentProfile.bloodType),
+          ...payload,
         });
       }
 
@@ -273,18 +311,22 @@ export function useSaveFullProfile() {
     mutationFn: async (values: ProfileFormValues) => {
       if (!ctx.principalId) throw new Error("وارد حساب کاربری نشده‌اید.");
       const { name, familyName } = splitName(values.fullName);
-      const payload = {
+      const current = await fetchPrincipal(ctx.principalId, ctx.isCaravan);
+      const payload = buildChangePayload({
         name,
         familyName,
         nationalCode: values.nationalCode || "",
         dateOfBirth: persianDateToIsoDate(values.birthDate) || undefined,
         gender: genderToApi(values.gender),
         passportNumber: values.passportNumber || "",
-        gmail: "",
+        gmail: values.gmail.trim() || readGmail(current),
         phoneNumber: values.mobile1 || "",
         emergencyPhoneNumber: values.relativePhone || "",
         bloodType: bloodTypeToApi(values.bloodType),
-      };
+      });
+      if (!payload.gmail) {
+        throw new Error("ایمیل (Gmail) الزامی است.");
+      }
 
       if (ctx.isCaravan) {
         await caravanApi.changeCaravanPrincipal(ctx.principalId, {
@@ -301,6 +343,7 @@ export function useSaveFullProfile() {
       useAuthStore.getState().updateProfile({
         name: values.fullName.trim(),
         phone: values.mobile1,
+        email: payload.gmail,
       });
     },
     onSuccess: () => {

@@ -152,6 +152,8 @@ export function MyReservationsContent({
     status: "all",
     sort: "newest",
   });
+  const [viewTarget, setViewTarget] = useState<RoomReservationList | null>(null);
+  const [actionMessage, setActionMessage] = useState<string | null>(null);
 
   const filteredReservations = useMemo(() => {
     const query = filters.search.trim().toLowerCase();
@@ -192,10 +194,20 @@ export function MyReservationsContent({
   }));
 
   const columns = buildColumns({
-    onView: (row) => console.log("view", row.id),
-    onDownload: (row) =>
-      onDownload ? onDownload(row) : console.log("download", row.id),
-    onCancel: (row) => console.log("cancel", row.id),
+    onView: (row) => {
+      setViewTarget(row);
+      setActionMessage(null);
+    },
+    onDownload: (row) => {
+      setActionMessage(null);
+      if (onDownload) onDownload(row);
+      else setActionMessage("دانلود رسید در دسترس نیست.");
+    },
+    onCancel: (row) => {
+      setActionMessage(
+        `لغو رزرو «${row.reservationCode || row.id}» از سمت بک‌اند پشتیبانی نشده؛ با پشتیبانی موکب تماس بگیرید.`,
+      );
+    },
   });
 
   if (isLoading) {
@@ -207,11 +219,73 @@ export function MyReservationsContent({
   }
 
   return (
-    <div className="flex w-full flex-col px-10 py-8 gap-12">
+    <div className="flex w-full flex-col px-10 py-8 gap-12" dir="rtl">
       <h1 className="flex w-full items-center gap-2 text-2xl font-bold text-gray-500 sm:text-3xl">
         <Image src={ReceiptText} alt="receipt" width={24} height={24} /> رزروهای
         من
       </h1>
+
+      {actionMessage ? (
+        <p className="text-sm text-[#175E47]">{actionMessage}</p>
+      ) : null}
+
+      {viewTarget ? (
+        <div className="rounded-2xl border border-gray-100 bg-white p-4 text-sm text-gray-700 shadow-sm">
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <p className="font-semibold text-[#175E47]">جزئیات رزرو</p>
+            <button
+              type="button"
+              className="text-xs text-gray-500 underline"
+              onClick={() => setViewTarget(null)}
+            >
+              بستن
+            </button>
+          </div>
+          <ul className="grid gap-2 sm:grid-cols-2">
+            <li>کد: {toPersianDigits(viewTarget.reservationCode || "—")}</li>
+            <li>وضعیت: {viewTarget.status}</li>
+            <li>ورود: {toPersianDigits(viewTarget.checkIn || "—")}</li>
+            <li>خروج: {toPersianDigits(viewTarget.checkOut || "—")}</li>
+            <li>سرپرست: {viewTarget.supervisorName || "—"}</li>
+            <li>تعداد زائران: {toPersianDigits(viewTarget.companionsCount)}</li>
+            <li>مرد: {toPersianDigits(viewTarget.maleCount)}</li>
+            <li>زن: {toPersianDigits(viewTarget.femaleCount)}</li>
+          </ul>
+          {viewTarget.pilgrims.length > 0 ? (
+            <div className="mt-4 overflow-x-auto">
+              <p className="mb-2 font-medium text-[#175E47]">لیست زائران</p>
+              <table className="w-full min-w-[480px] text-center text-xs">
+                <thead>
+                  <tr className="border-b border-gray-100 text-gray-500">
+                    <th className="py-2">نام</th>
+                    <th className="py-2">نام خانوادگی</th>
+                    <th className="py-2">جنسیت</th>
+                    <th className="py-2">کد ملی</th>
+                    <th className="py-2">پاسپورت</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {viewTarget.pilgrims.map((p, i) => (
+                    <tr key={`${p.nationalCode}-${i}`} className="border-b border-gray-50">
+                      <td className="py-2">{p.firstName || "—"}</td>
+                      <td className="py-2">{p.lastName || "—"}</td>
+                      <td className="py-2">
+                        {p.gender === "female" ? "زن" : "مرد"}
+                      </td>
+                      <td className="py-2">
+                        {toPersianDigits(p.nationalCode || "—")}
+                      </td>
+                      <td className="py-2">
+                        {toPersianDigits(p.passportNumber || "—")}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
 
       <ReservationFilters values={filters} onChange={setFilters} />
 

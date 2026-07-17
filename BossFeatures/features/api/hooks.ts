@@ -76,6 +76,7 @@ function companionToBossAccompany(dto: CompanionDto, index: number): Accompany {
     mobile1: readStr(dto.phoneNumber ?? dto.PhoneNumber),
     mobile2: "",
     relativePhone: readStr(dto.emergencyPhoneNumber ?? dto.EmergencyPhoneNumber),
+    gmail: "",
   };
 }
 
@@ -161,11 +162,11 @@ export function useAddBossCompanion() {
         familyName: parts.slice(1).join(" "),
         nationalCode: isForeign ? "" : values.nationalCode,
         passportNumber: isForeign
-          ? values.passportNumber || values.nationalCode
-          : values.passportNumber,
+          ? values.passportNumber || values.nationalCode || ""
+          : values.passportNumber || "",
         dateOfBirth: persianDateToIsoDate(values.birthDate),
-        phoneNumber: values.mobile1,
-        emergencyPhoneNumber: values.relativePhone,
+        phoneNumber: values.mobile1 || "",
+        emergencyPhoneNumber: values.relativePhone || "",
         gender: genderToApi(values.gender),
       });
     },
@@ -197,7 +198,14 @@ export function useUploadBossCompanionFile() {
       if (!bossId) throw new Error("وارد حساب کاروان نشده‌اید.");
       return caravanApi.uploadPilgrimsExcel(bossId, file);
     },
-    onSuccess: () => {
+    onSuccess: (raw) => {
+      if (bossId && Array.isArray(raw)) {
+        const list = raw as CompanionDto[];
+        qc.setQueryData(
+          bossQueryKeys.companions(bossId, ""),
+          list.map(companionToBossAccompany),
+        );
+      }
       void qc.invalidateQueries({ queryKey: ["boss", "companions", bossId ?? ""] });
     },
   });
@@ -239,11 +247,12 @@ export function useUpdateBossProfile() {
         emergencyPhoneNumber: values.relativePhone,
         gender: genderToApi(values.gender),
         bloodType: bloodTypeToApi(values.bloodType),
-        gmail: null,
+        gmail: values.gmail.trim(),
       });
       useAuthStore.getState().updateProfile({
         name: values.fullName.trim(),
         phone: values.mobile1,
+        email: values.gmail.trim(),
       });
     },
     onSuccess: () => {
@@ -278,10 +287,20 @@ export type ReserveResult = {
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function asIdString(value: unknown): string | null {
+  if (typeof value === "string" && value.trim()) return value.trim();
+  if (typeof value === "number" && Number.isFinite(value)) return String(value);
+  return null;
+}
+
 function extractRequestIdFromResponse(raw: unknown): string | null {
   if (typeof raw === "string") {
-    const trimmed = raw.trim();
-    if (UUID_RE.test(trimmed)) return trimmed;
+    const trimmed = raw.trim().replace(/^"|"$/g, "");
+    if (trimmed) return trimmed;
     return null;
   }
   if (!raw || typeof raw !== "object") return null;
@@ -293,12 +312,20 @@ function extractRequestIdFromResponse(raw: unknown): string | null {
     r.Id,
     r.reservationCode,
     r.ReservationCode,
+    r.result,
+    r.Result,
+    r.response,
+    r.Response,
+    r.value,
+    r.Value,
+    r.data,
+    r.Data,
   ];
   for (const value of candidates) {
-    if (typeof value === "string" && value.trim()) {
-      const trimmed = value.trim();
-      if (UUID_RE.test(trimmed) || trimmed.length >= 8) return trimmed;
-    }
+    const nested = extractRequestIdFromResponse(value);
+    if (nested) return nested;
+    const direct = asIdString(value);
+    if (direct && (UUID_RE.test(direct) || direct.length >= 8)) return direct;
   }
   return null;
 }
@@ -311,39 +338,46 @@ async function resolveCaravanRequestId(
   raw: unknown,
 ): Promise<string> {
   const fromResponse = extractRequestIdFromResponse(raw);
-  if (fromResponse && UUID_RE.test(fromResponse)) return fromResponse;
+  if (fromResponse) return fromResponse;
 
-  const listRaw = await caravanApi.getCaravanRequests(caravanId);
-  const list = normalizeList<RequestDto>(listRaw);
   const enterDate = enterTime.slice(0, 10);
+  const attempts = [0, 400, 900, 1600];
 
-  const matches = list.filter((dto) => {
-    const enter = readStr(dto.enterTime ?? dto.EnterTime).slice(0, 10);
-    if (enter !== enterDate) return false;
-    const male = dto.maleAmount ?? dto.MaleAmount;
-    const female = dto.femaleAmount ?? dto.FemaleAmount;
-    if (typeof male === "number" && male !== maleAmount) return false;
-    if (typeof female === "number" && female !== femaleAmount) return false;
-    return true;
-  });
+  for (const delay of attempts) {
+    if (delay > 0) await sleep(delay);
+    const listRaw = await caravanApi.getCaravanRequests(caravanId);
+    const list = normalizeList<RequestDto>(listRaw);
+    if (list.length === 0) continue;
 
-  const pending = matches.filter((dto) => {
-    const state = dto.state ?? dto.State ?? 0;
-    return state === 0 || state === 1;
-  });
-  const pick = pending.at(-1) ?? matches.at(-1);
-  const id =
-    pick?.id ??
-    pick?.Id ??
-    pick?.requestId ??
-    pick?.RequestId ??
-    fromResponse;
-  if (!id) {
-    throw new Error(
-      "درخواست ارسال شد ولی شناسه رزرو از سرور دریافت نشد. چند لحظه بعد صفحه را تازه کنید.",
-    );
+    const scored = list
+      .map((dto, index) => {
+        const id =
+          asIdString(dto.id) ??
+          asIdString(dto.Id) ??
+          asIdString(dto.requestId) ??
+          asIdString(dto.RequestId) ??
+          asIdString(dto.reservationCode) ??
+          asIdString(dto.ReservationCode);
+        const enter = readStr(dto.enterTime ?? dto.EnterTime).slice(0, 10);
+        const male = dto.maleAmount ?? dto.MaleAmount;
+        const female = dto.femaleAmount ?? dto.FemaleAmount;
+        const state = dto.state ?? dto.State ?? 0;
+        let score = index;
+        if (enter === enterDate) score += 100;
+        if (typeof male === "number" && male === maleAmount) score += 20;
+        if (typeof female === "number" && female === femaleAmount) score += 20;
+        if (state === 0 || state === 1) score += 10;
+        return { id, score };
+      })
+      .filter((row): row is { id: string; score: number } => Boolean(row.id))
+      .sort((a, b) => b.score - a.score);
+
+    if (scored[0]?.id) return scored[0].id;
   }
-  return String(id);
+
+  throw new Error(
+    "درخواست ارسال شد ولی شناسه رزرو از سرور دریافت نشد. چند لحظه بعد صفحه را تازه کنید.",
+  );
 }
 
 export function useBossReserve() {

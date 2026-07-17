@@ -4,8 +4,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { X } from "lucide-react";
 import { useForm } from "react-hook-form";
 import {
+  companionProfileSchema,
   profileDefaultValues,
-  profileSchema,
   type ProfileFormValues,
 } from "../../lib/profileSchema";
 import { ProfileFormFields } from "../ProfileFormFields";
@@ -19,7 +19,7 @@ type Props = {
 export function ZaerManagementFormModal({ open, onClose, onSubmit }: Props) {
   const { control, handleSubmit, setValue, watch, reset } =
     useForm<ProfileFormValues>({
-      resolver: zodResolver(profileSchema),
+      resolver: zodResolver(companionProfileSchema),
       defaultValues: profileDefaultValues,
     });
 
@@ -58,6 +58,7 @@ export function ZaerManagementFormModal({ open, onClose, onSubmit }: Props) {
             setValue={setValue}
             watch={watch}
             disabled={false}
+            showGmail={false}
           />
 
           <div className="flex justify-end gap-3">

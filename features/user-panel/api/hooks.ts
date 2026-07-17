@@ -57,11 +57,19 @@ export function useUpdateProfile() {
         individualId,
         profileFormToChangeCommand(individualId, values),
       );
+      useAuthStore.getState().updateProfile({
+        name: values.fullName.trim(),
+        phone: values.mobile1,
+        email: values.gmail.trim(),
+      });
     },
     onSuccess: () => {
       if (individualId) {
         void queryClient.invalidateQueries({
           queryKey: queryKeys.profile(individualId),
+        });
+        void queryClient.invalidateQueries({
+          queryKey: ["principal-settings"],
         });
       }
     },

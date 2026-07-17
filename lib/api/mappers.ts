@@ -102,6 +102,7 @@ export function individualToProfileForm(
     relativePhone: str(
       dto.emergencyPhoneNumber ?? dto.EmergencyPhoneNumber,
     ),
+    gmail: str(dto.gmail ?? dto.Gmail),
   };
 }
 
@@ -132,7 +133,7 @@ export function profileFormToChangeCommand(
     dateOfBirth: persianDateToIsoDate(values.birthDate),
     gender: genderToApi(values.gender),
     passportNumber: values.passportNumber,
-    gmail: "",
+    gmail: values.gmail.trim(),
     phoneNumber: values.mobile1,
     emergencyPhoneNumber: values.relativePhone,
     bloodType: bloodTypeToApi(values.bloodType),
@@ -161,6 +162,7 @@ export function companionToAccompany(dto: CompanionDto, index: number): Accompan
     mobile1: str(dto.phoneNumber ?? dto.PhoneNumber),
     mobile2: "",
     relativePhone: str(dto.emergencyPhoneNumber ?? dto.EmergencyPhoneNumber),
+    gmail: "",
   };
 }
 
@@ -304,10 +306,17 @@ export function requestToReservation(
     (maleCount + femaleCount > 0
       ? maleCount + femaleCount
       : pilgrims.length);
+  const codeFromApi = str(
+    dto.reservationCode ?? dto.ReservationCode,
+  ).trim();
+  const reservationCode = codeFromApi
+    ? codeFromApi.slice(0, 16).toUpperCase()
+    : String(id).slice(0, 8).toUpperCase();
+
   return {
     id: numericId,
     radif: index + 1,
-    reservationCode: String(id).slice(0, 8).toUpperCase(),
+    reservationCode,
     checkIn: isoDateToPersianDate(
       str(dto.enterTime ?? dto.EnterTime).slice(0, 10),
     ),

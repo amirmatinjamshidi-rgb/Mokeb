@@ -108,6 +108,8 @@ export type RequestDto = {
   FemaleAmount?: number;
   travelers?: TravelerDto[] | null;
   Travelers?: TravelerDto[] | null;
+  reservationCode?: string | null;
+  ReservationCode?: string | null;
 };
 
 export type TravelerDto = {

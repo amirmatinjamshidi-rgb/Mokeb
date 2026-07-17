@@ -23,7 +23,9 @@ export default function ManageGuestsPage() {
       onDelete={(row: Accompany) =>
         removeCompanion.mutateAsync(String(row.id))
       }
-      onExcelUpload={(file) => void uploadFile.mutate(file)}
+      onExcelUpload={async (file) => {
+        await uploadFile.mutateAsync(file);
+      }}
     />
   );
 }

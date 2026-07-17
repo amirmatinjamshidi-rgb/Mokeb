@@ -6,6 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import Button from "@/features/shared/ui/button";
 import { cn } from "@/features/shared/lib/utils";
 import { useReserveRoom } from "@/features/user-panel/api/hooks";
+import { extractRequestId, toReserveCode } from "@/lib/api/extractRequestId";
 import { pilgrimToTravelerDto } from "@/lib/api/mappers";
 import { useReservationCapacityStore } from "../store/useReservationCapacityStore";
 import { SiteReservationContentRow } from "../layouts/SiteReservationLayout";
@@ -76,15 +77,9 @@ export function GuestInfoSection({ className }: Props) {
         femaleAmount: femaleCount,
         travelers,
       });
-      if (typeof result === "string" && result.trim()) {
-        submittedRequestId = result.trim();
-      } else if (result && typeof result === "object") {
-        const r = result as Record<string, unknown>;
-        const id = r.requestId ?? r.RequestId ?? r.id ?? r.Id;
-        if (id) submittedRequestId = String(id);
-      }
+      submittedRequestId = extractRequestId(result);
       if (submittedRequestId) {
-        reserveCode = submittedRequestId.slice(0, 8).toUpperCase();
+        reserveCode = toReserveCode(submittedRequestId);
       }
     } catch (err) {
       setSubmitError(

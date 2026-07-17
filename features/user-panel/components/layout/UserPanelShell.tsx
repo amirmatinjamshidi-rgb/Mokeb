@@ -132,6 +132,7 @@ export function UserPanelShell({ children }: Props) {
           menuOpen={sidebarOpen}
           onMenuToggle={toggleSidebar}
           userName={user?.name ?? "زائر گرامی"}
+          settingsHref={`${ROUTES.userPanel}/settings`}
         />
 
         <main className="flex-1 overflow-x-hidden">{children}</main>

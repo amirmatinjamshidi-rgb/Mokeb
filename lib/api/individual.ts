@@ -211,8 +211,11 @@ export async function uploadCompanionsExcel(individualId: string, file: File) {
   const form = new FormData();
   form.append("IndividualId", individualId);
   form.append("ExcelFile", file);
-  return apiRequest<void>(`/Individual/${individualId}/Companions/File`, {
-    method: "POST",
-    rawBody: form,
-  });
+  return apiRequest<CompanionDto[] | void>(
+    `/Individual/${individualId}/Companions/File`,
+    {
+      method: "POST",
+      rawBody: form,
+    },
+  );
 }

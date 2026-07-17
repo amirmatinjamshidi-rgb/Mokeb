@@ -65,7 +65,7 @@ function buildColumns(
       key: "reservationCode",
       header: "کد رزرو",
       colClassName: "text-center",
-      cell: (row) => row.reservationCode,
+      cell: (row) => toPersianDigits(row.reservationCode),
     },
     {
       key: "checkIn",
@@ -214,7 +214,7 @@ export function MyReservationsContent({ reservations = [] }: Props) {
   });
 
   return (
-    <div className="flex w-full flex-col gap-8">
+    <div className="flex w-full flex-col gap-8" dir="rtl">
       <h1 className="flex w-full items-center gap-2 text-2xl font-bold text-gray-500 sm:text-3xl">
         <ReceiptText className="size-7 sm:size-8" /> رزروهای من
       </h1>
@@ -250,9 +250,47 @@ export function MyReservationsContent({ reservations = [] }: Props) {
             <li>وضعیت: {viewTarget.status}</li>
             <li>ورود: {toPersianDigits(viewTarget.checkIn || "—")}</li>
             <li>خروج: {toPersianDigits(viewTarget.checkOut || "—")}</li>
+            <li>سرپرست: {viewTarget.supervisorName || "—"}</li>
+            <li>تعداد زائران: {toPersianDigits(viewTarget.companionsCount)}</li>
             <li>مرد: {toPersianDigits(viewTarget.maleCount)}</li>
             <li>زن: {toPersianDigits(viewTarget.femaleCount)}</li>
           </ul>
+          {viewTarget.pilgrims.length > 0 ? (
+            <div className="mt-4 overflow-x-auto">
+              <p className="mb-2 font-medium text-[#175E47]">لیست زائران</p>
+              <table className="w-full min-w-[480px] text-center text-xs">
+                <thead>
+                  <tr className="border-b border-gray-100 text-gray-500">
+                    <th className="py-2">نام</th>
+                    <th className="py-2">نام خانوادگی</th>
+                    <th className="py-2">جنسیت</th>
+                    <th className="py-2">کد ملی</th>
+                    <th className="py-2">پاسپورت</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {viewTarget.pilgrims.map((p, i) => (
+                    <tr
+                      key={`${p.nationalCode}-${i}`}
+                      className="border-b border-gray-50"
+                    >
+                      <td className="py-2">{p.firstName || "—"}</td>
+                      <td className="py-2">{p.lastName || "—"}</td>
+                      <td className="py-2">
+                        {p.gender === "female" ? "زن" : "مرد"}
+                      </td>
+                      <td className="py-2">
+                        {toPersianDigits(p.nationalCode || "—")}
+                      </td>
+                      <td className="py-2">
+                        {toPersianDigits(p.passportNumber || "—")}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : null}
         </div>
       ) : null}
 
@@ -263,6 +301,7 @@ export function MyReservationsContent({ reservations = [] }: Props) {
         columns={columns}
         size="lg"
         className="w-full"
+        dir="rtl"
       />
 
       <TablePagination
