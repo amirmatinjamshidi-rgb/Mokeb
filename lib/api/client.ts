@@ -137,9 +137,19 @@ export async function apiRequest<T>(
       parsed && typeof parsed === "object"
         ? pickEnvelopeError(parsed as ApiEnvelope<unknown>)
         : null;
+    const rawText = typeof parsed === "string" ? parsed : null;
+    // Proxy misconfig (missing API_URL) returns Next.js HTML 404 pages.
+    const looksLikeHtml =
+      contentType.includes("text/html") ||
+      (rawText != null && /^\s*</.test(rawText));
     const message =
       envelopeError ??
-      (typeof parsed === "string" ? parsed : null) ??
+      (looksLikeHtml
+        ? response.status === 404
+          ? "اتصال به سرور برقرار نشد. مسیر API یافت نشد."
+          : `خطای سرور (${response.status})`
+        : null) ??
+      rawText ??
       `خطای سرور (${response.status})`;
     throw new ApiError(message, response.status, parsed);
   }
