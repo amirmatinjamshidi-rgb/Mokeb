@@ -30,11 +30,6 @@ function decodeJwtPayload(token: string): Record<string, unknown> | null {
   }
 }
 
-/**
- * The backend returns login responses as a bare JWT string (text/plain),
- * but older/other endpoints may use a `{ principalId, jwsCode }` object.
- * The principal id lives in the JWT `nameidentifier` claim.
- */
 export function normalizeLoginResult(raw: LoginResult | string | undefined): {
   principalId: string;
   token: string;

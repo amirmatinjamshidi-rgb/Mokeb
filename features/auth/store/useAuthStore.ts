@@ -107,12 +107,31 @@ export const useAuthStore = create<AuthState>()(
                 : "ثبت‌نام با موفقیت انجام شد."),
           };
         } catch (err) {
-          if (err instanceof ApiError && err.status === 500) {
-            return {
-              ok: false,
-              error:
-                "ثبت‌نام ناموفق بود. ممکن است نام کاربری تکراری باشد یا اطلاعات نامعتبر باشد.",
-            };
+          if (err instanceof ApiError) {
+            // Proxy/network failures (backend down) often surface as 502/503/504 or empty 500.
+            if (
+              err.status === 502 ||
+              err.status === 503 ||
+              err.status === 504 ||
+              (err.status === 500 &&
+                (!err.message ||
+                  /proxy|ETIMEDOUT|ECONNREFUSED|Failed to proxy/i.test(
+                    err.message,
+                  )))
+            ) {
+              return {
+                ok: false,
+                error:
+                  "اتصال به سرور برقرار نشد. لطفاً بعداً دوباره تلاش کنید.",
+              };
+            }
+            if (err.status === 500) {
+              return {
+                ok: false,
+                error:
+                  "ثبت‌نام ناموفق بود. ممکن است نام کاربری تکراری باشد یا اطلاعات نامعتبر باشد.",
+              };
+            }
           }
           const message =
             err instanceof Error ? err.message : "ثبت‌نام ناموفق بود.";
