@@ -54,14 +54,17 @@ export async function deleteRoom(roomId: string) {
   });
 }
 
-/** POST /Room/{roomId}/RoomAvailability */
+/** POST /Room/{roomId}/RoomAvailability — supports single day or enter/exit range. */
 export async function addRoomAvailability(
   roomId: string,
   body: Omit<AddRoomAvailabilityCommand, "roomId"> & { roomId?: string },
 ) {
+  const enter = body.dateOfAvailability?.trim() ?? "";
+  const exit = body.exitDate?.trim() || undefined;
   const payload: AddRoomAvailabilityCommand = {
     roomId: body.roomId ?? roomId,
-    dateOfAvailability: body.dateOfAvailability,
+    dateOfAvailability: enter,
+    ...(exit && exit !== enter ? { exitDate: exit } : {}),
   };
   return apiRequest<RoomAvailabilityDto | string | void>(
     `/Room/${roomId}/RoomAvailability`,

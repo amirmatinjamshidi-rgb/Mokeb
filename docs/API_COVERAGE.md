@@ -15,7 +15,7 @@
 
 | مسیر                           | وضعیت                                                              |
 | ------------------------------ | ------------------------------------------------------------------ |
-| POST `/Admin/Login`            | وصل — **بیلد فعلی بک‌اند ممکن است `NotImplementedException` بدهد** |
+| POST `/Admin/Login`            | وصل — seed پیش‌فرض: `admin` / `admin` (جدول Admins)              |
 | POST `/Admin/{adminId}/LogOut` | وصل                                                                |
 
 ## Caravan

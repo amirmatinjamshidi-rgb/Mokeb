@@ -1,4 +1,6 @@
 ﻿using Mokeb.DI;
+using Mokeb.Infrastructure;
+using Mokeb.Infrastructure.Context;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -26,6 +28,20 @@ builder.Services.AddCors(options =>
             .SetIsOriginAllowed(_ => true));
 });
 var app = builder.Build();
+
+// Ensure default admin (username: admin, password: admin) exists.
+using (var scope = app.Services.CreateScope())
+{
+    try
+    {
+        var db = scope.ServiceProvider.GetRequiredService<MokebDbContext>();
+        await AdminSeed.EnsureAsync(db);
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"[AdminSeed] Skipped: {ex.Message}");
+    }
+}
 
 // Configure the HTTP request pipeline.
 

@@ -459,7 +459,10 @@ export type AddRoomCommand = {
 /** AddingRoomAvailabilityCommand */
 export type AddRoomAvailabilityCommand = {
   roomId: string;
+  /** Enter date (ISO YYYY-MM-DD), or single day when exitDate omitted. */
   dateOfAvailability: string;
+  /** Optional exit date (ISO YYYY-MM-DD, inclusive). Backend activates each day in range. */
+  exitDate?: string | null;
 };
 
 /** UpdatingRoomAvailabilityDateCommand */

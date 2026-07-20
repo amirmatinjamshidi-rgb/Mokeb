@@ -8,10 +8,15 @@ namespace Mokeb.Application.CommandHandler.AdminCommands.AddingRoomAvailability
         {
             RuleFor(x => x.roomId)
                 .NotEmpty()
-                .WithMessage("RoomId can't be empty");
+                .WithMessage("RoomId is required");
+
             RuleFor(x => x.DateOfAvailability)
                 .NotEmpty()
-                .WithMessage("Date Can't be empty");
+                .WithMessage("Enter date is required");
+
+            RuleFor(x => x)
+                .Must(x => !x.ExitDate.HasValue || x.ExitDate.Value >= x.DateOfAvailability)
+                .WithMessage("Exit date must be on or after enter date");
         }
     }
 }

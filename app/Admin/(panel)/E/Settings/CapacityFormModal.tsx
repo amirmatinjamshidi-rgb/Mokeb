@@ -1,6 +1,6 @@
 "use client";
 
-import {  Receipt, UserRound, UsersRound } from "lucide-react";
+import { Receipt, UserRound, UsersRound } from "lucide-react";
 import { useForm } from "react-hook-form";
 
 import FormTextInput from "@admin-kit/ui/FormTextInput";
@@ -22,8 +22,10 @@ export type CapacityFormValues = {
   gender: CapacityGender;
   /** Present on edit; on add the backend returns UUID from POST /Room. */
   roomId: string;
-  /** Target availability date (ISO YYYY-MM-DD) for activate / ChangeDate. */
-  targetDate: string;
+  /** Enter date (ISO YYYY-MM-DD) — same pattern as general reservation. */
+  enterDate: string;
+  /** Exit date (ISO YYYY-MM-DD, inclusive). */
+  exitDate: string;
 };
 
 const defaultValues: CapacityFormValues = {
@@ -32,7 +34,8 @@ const defaultValues: CapacityFormValues = {
   classLevel: "",
   gender: "مرد",
   roomId: "",
-  targetDate: "",
+  enterDate: "",
+  exitDate: "",
 };
 
 type AddProps = {
@@ -147,7 +150,11 @@ export function CapacityFormModal(props: Props) {
 
   const { control, handleSubmit, reset, setValue, watch } =
     useForm<CapacityFormValues>({
-      defaultValues: { ...defaultValues, targetDate: defaultDate },
+      defaultValues: {
+        ...defaultValues,
+        enterDate: defaultDate,
+        exitDate: defaultDate,
+      },
       values: row
         ? {
             classLabel: row.className,
@@ -155,24 +162,41 @@ export function CapacityFormModal(props: Props) {
             classLevel: row.reservationKind,
             gender: row.gender,
             roomId: String((row as { roomId?: string }).roomId ?? row.id ?? ""),
-            targetDate: defaultDate,
+            enterDate: defaultDate,
+            exitDate: defaultDate,
           }
-        : { ...defaultValues, targetDate: defaultDate },
+        : {
+            ...defaultValues,
+            enterDate: defaultDate,
+            exitDate: defaultDate,
+          },
     });
 
-  const targetDate = watch("targetDate");
+  const enterDate = watch("enterDate");
+  const exitDate = watch("exitDate");
 
   if (!props.open) return null;
   if (isEdit && !row) return null;
 
   const submit = (values: CapacityFormValues) => {
+    if (values.exitDate && values.enterDate && values.exitDate < values.enterDate) {
+      return;
+    }
     props.onSubmit(values);
     if (!submitting) {
-      reset({ ...defaultValues, targetDate: defaultDate });
+      reset({
+        ...defaultValues,
+        enterDate: defaultDate,
+        exitDate: defaultDate,
+      });
     }
   };
 
   const inputClass = "[&_input]:h-14 [&_div]:h-14 [&_div]:rounded-xl";
+  const dateRangeError =
+    enterDate && exitDate && exitDate < enterDate
+      ? "تاریخ خروج باید هم‌زمان یا بعد از تاریخ ورود باشد"
+      : null;
 
   return (
     <SettingsModalShell
@@ -214,22 +238,35 @@ export function CapacityFormModal(props: Props) {
           className={inputClass}
         />
 
-        {/* <FormTextInput
-          name="classLevel"
-          control={control}
-          placeholder="نوع رزرو"
-          rightIcon={Receipt}
-          className={inputClass}
-        /> */}
-
-        <div className="sm:col-span-2">
+        <div>
           <PersianDateField
-            value={targetDate}
-            onChange={(iso) => setValue("targetDate", iso ?? "", { shouldDirty: true })}
+            value={enterDate}
+            onChange={(iso) => {
+              const next = iso ?? "";
+              setValue("enterDate", next, { shouldDirty: true });
+              if (!exitDate || (exitDate && next && exitDate < next)) {
+                setValue("exitDate", next, { shouldDirty: true });
+              }
+            }}
             outputFormat="iso"
-            placeholder={isEdit ? "تاریخ جدید ظرفیت" : "تاریخ فعال‌سازی ظرفیت"}
+            placeholder="تاریخ ورود ظرفیت"
           />
         </div>
+
+        <div>
+          <PersianDateField
+            value={exitDate}
+            onChange={(iso) =>
+              setValue("exitDate", iso ?? "", { shouldDirty: true })
+            }
+            outputFormat="iso"
+            placeholder="تاریخ خروج ظرفیت"
+          />
+        </div>
+
+        {dateRangeError ? (
+          <p className="text-sm text-red-600 sm:col-span-2">{dateRangeError}</p>
+        ) : null}
 
         {isEdit ? (
           <FormTextInput

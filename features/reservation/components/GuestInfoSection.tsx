@@ -33,6 +33,8 @@ function countGender(
 
 export function GuestInfoSection({ className }: Props) {
   const guests = useReservationCapacityStore((s) => s.guests);
+  const expectedMale = useReservationCapacityStore((s) => s.maleCount);
+  const expectedFemale = useReservationCapacityStore((s) => s.femaleCount);
   const entryDate = useReservationCapacityStore((s) => s.entryDate);
   const exitDate = useReservationCapacityStore((s) => s.exitDate);
   const completeGuestRegistration = useReservationCapacityStore(
@@ -45,9 +47,13 @@ export function GuestInfoSection({ className }: Props) {
 
   const defaultValues = useMemo<RegistrationFormValues>(
     () => ({
-      pilgrims: Array.from({ length: guests }, () => emptyPilgrim()),
+      pilgrims: Array.from({ length: guests }, (_, index) => {
+        const pilgrim = emptyPilgrim();
+        pilgrim.gender = index < expectedMale ? "male" : "female";
+        return pilgrim;
+      }),
     }),
-    [guests],
+    [guests, expectedMale],
   );
 
   const { control, handleSubmit } = useForm<RegistrationFormValues>({
@@ -64,6 +70,13 @@ export function GuestInfoSection({ className }: Props) {
     const supervisorName =
       [p0?.firstName, p0?.lastName].filter(Boolean).join(" ").trim() || "—";
     setSubmitError(null);
+
+    if (maleCount !== expectedMale || femaleCount !== expectedFemale) {
+      setSubmitError(
+        `تعداد جنسیت باید با ظرفیت انتخاب‌شده هماهنگ باشد (مرد: ${expectedMale}، زن: ${expectedFemale}).`,
+      );
+      return;
+    }
 
     const travelers = data.pilgrims.map(pilgrimToTravelerDto);
 

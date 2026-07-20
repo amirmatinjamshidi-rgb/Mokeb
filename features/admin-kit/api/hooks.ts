@@ -973,7 +973,11 @@ export function useAddRoom(date: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (
-      body: AddRoomCommand & { roomId?: string; availabilityDate?: string },
+      body: AddRoomCommand & {
+        roomId?: string;
+        availabilityDate?: string;
+        exitDate?: string;
+      },
     ) => {
       let roomId = body.roomId?.trim() ?? "";
       let created: unknown = null;
@@ -1001,14 +1005,16 @@ export function useAddRoom(date: string) {
       }
 
       const availabilityDate = body.availabilityDate?.trim() || date;
+      const exitDate = body.exitDate?.trim() || availabilityDate;
       if (availabilityDate) {
         await roomApi.addRoomAvailability(roomId, {
           roomId,
           dateOfAvailability: availabilityDate,
+          exitDate: exitDate !== availabilityDate ? exitDate : undefined,
         });
       }
 
-      return { created, roomId, availabilityDate };
+      return { created, roomId, availabilityDate, exitDate };
     },
     onSuccess: (_data, variables) => {
       const target = variables.availabilityDate?.trim() || date;
@@ -1174,15 +1180,21 @@ export function useAddRoomAvailability(date: string) {
     mutationFn: ({
       roomId,
       date: availabilityDate,
+      exitDate,
     }: {
       roomId: string;
       capacity?: number;
       date: string;
-    }) =>
-      roomApi.addRoomAvailability(roomId, {
+      exitDate?: string;
+    }) => {
+      const enter = availabilityDate.trim();
+      const exit = (exitDate ?? enter).trim();
+      return roomApi.addRoomAvailability(roomId, {
         roomId,
-        dateOfAvailability: availabilityDate,
-      }),
+        dateOfAvailability: enter,
+        exitDate: exit !== enter ? exit : undefined,
+      });
+    },
     onSuccess: (_data, variables) => {
       const target = variables.date || date;
       void queryClient.invalidateQueries({ queryKey: adminQueryKeys.rooms(target) });

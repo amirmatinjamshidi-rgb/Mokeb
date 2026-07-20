@@ -213,37 +213,44 @@ export function CapacityManagementTab() {
     const capacity = Number(values.capacity) || 0;
     const typedRoomId = values.roomId?.trim() ?? "";
     const catalogId = findByNameGender(name, gender)?.roomId ?? "";
-    const targetDate = values.targetDate.trim() || dateKey;
+    const enterDate = values.enterDate.trim() || dateKey;
+    const exitDate = values.exitDate.trim() || enterDate;
+
+    if (exitDate < enterDate) {
+      setActionError("تاریخ خروج باید هم‌زمان یا بعد از تاریخ ورود باشد.");
+      return;
+    }
 
     try {
       if (typedRoomId) {
-        // Explicit UUID: skip create, attach availability (and resolve via get-all if needed upstream).
         const result = await addRoom.mutateAsync({
           name,
           capacity,
           gender,
           roomId: typedRoomId,
-          availabilityDate: targetDate,
+          availabilityDate: enterDate,
+          exitDate,
         });
         upsertRoom({ roomId: result.roomId, name, gender, capacity });
         setActionMessage(
-          `ظرفیت تاریخ ${targetDate} ثبت شد (${result.roomId.slice(0, 8)}…).`,
+          `ظرفیت بازه ${enterDate} تا ${exitDate} ثبت شد (${result.roomId.slice(0, 8)}…).`,
         );
       } else if (catalogId) {
         await addRoomAvailability.mutateAsync({
           roomId: catalogId,
           capacity,
-          date: targetDate,
+          date: enterDate,
+          exitDate,
         });
         upsertRoom({ roomId: catalogId, name, gender, capacity });
-        setActionMessage(`ظرفیت برای تاریخ ${targetDate} فعال شد.`);
+        setActionMessage(`ظرفیت بازه ${enterDate} تا ${exitDate} فعال شد.`);
       } else {
-        // POST /Room then resolve UUID via get-all / list, then POST availability.
         const result = await addRoom.mutateAsync({
           name,
           capacity,
           gender,
-          availabilityDate: targetDate,
+          availabilityDate: enterDate,
+          exitDate,
         });
         upsertRoom({
           roomId: result.roomId,
@@ -252,7 +259,7 @@ export function CapacityManagementTab() {
           capacity,
         });
         setActionMessage(
-          `اتاق و ظرفیت تاریخ ${targetDate} ثبت شد (${result.roomId.slice(0, 8)}…).`,
+          `اتاق و ظرفیت بازه ${enterDate} تا ${exitDate} ثبت شد (${result.roomId.slice(0, 8)}…).`,
         );
       }
       setAddOpen(false);
@@ -272,36 +279,45 @@ export function CapacityManagementTab() {
       values.roomId?.trim() || editTarget.roomId || "",
     ).trim();
     const availabilityId = String(editTarget.id ?? "").trim();
-    const targetDate = values.targetDate.trim() || dateKey;
+    const enterDate = values.enterDate.trim() || dateKey;
+    const exitDate = values.exitDate.trim() || enterDate;
     const currentDate = (editTarget.date ?? dateKey).slice(0, 10);
 
     if (!roomId) {
       setActionError("شناسه اتاق برای فعال‌سازی تاریخ لازم است.");
       return;
     }
+    if (exitDate < enterDate) {
+      setActionError("تاریخ خروج باید هم‌زمان یا بعد از تاریخ ورود باشد.");
+      return;
+    }
 
     try {
-      const canChangeDate =
+      const singleDayEdit =
+        enterDate === exitDate &&
         Boolean(availabilityId) &&
         availabilityId !== roomId &&
-        targetDate !== currentDate;
+        enterDate !== currentDate;
 
-      if (canChangeDate) {
+      if (singleDayEdit) {
         await changeAvailabilityDate.mutateAsync({
           roomId,
           roomAvailabilityId: availabilityId,
-          newDate: targetDate,
+          newDate: enterDate,
         });
         setActionMessage(
-          `تاریخ ظرفیت از ${currentDate} به ${targetDate} تغییر کرد.`,
+          `تاریخ ظرفیت از ${currentDate} به ${enterDate} تغییر کرد.`,
         );
       } else {
         await addRoomAvailability.mutateAsync({
           roomId,
           capacity: Number(values.capacity) || editTarget.capacity,
-          date: targetDate,
+          date: enterDate,
+          exitDate,
         });
-        setActionMessage(`ظرفیت تاریخ ${targetDate} برای این اتاق فعال شد.`);
+        setActionMessage(
+          `ظرفیت بازه ${enterDate} تا ${exitDate} برای این اتاق فعال شد.`,
+        );
       }
 
       upsertRoom({

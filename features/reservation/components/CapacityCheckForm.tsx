@@ -9,7 +9,7 @@ import FormHelperText from "@mui/material/FormHelperText";
 import MenuItem from "@mui/material/MenuItem";
 import Select from "@mui/material/Select";
 import TextField from "@mui/material/TextField";
-import { Controller, useForm, useWatch } from "react-hook-form";
+import { Controller, useForm, useWatch, type Control } from "react-hook-form";
 import { z } from "zod";
 import DateObject from "react-date-object";
 import Button from "@/features/shared/ui/button";
@@ -27,7 +27,8 @@ import { isCapacityAvailable } from "@/features/shared/lib/capacityResult";
 import { useReservationRulesStore } from "@admin-kit/settings/useReservationRulesStore";
 
 export type CapacityFormValues = {
-  guests: number | "";
+  maleCount: number | "";
+  femaleCount: number | "";
   entryDate: string;
   exitDate: string;
 };
@@ -82,12 +83,77 @@ function stayDaysInclusive(entry: string, exit: string): number {
   }
 }
 
+function countSelect(
+  name: "maleCount" | "femaleCount",
+  label: string,
+  control: Control<CapacityFormValues>,
+  error: string | undefined,
+  options: number[],
+  onReset: () => void,
+) {
+  return (
+    <Controller
+      name={name}
+      control={control}
+      render={({ field }) => {
+        const val = field.value as number | "";
+        return (
+          <FormControl
+            size="small"
+            required
+            error={!!error}
+            sx={{
+              minWidth: { xs: "100%", md: 160 },
+              width: { xs: "100%", md: 160 },
+            }}
+          >
+            <Select
+              displayEmpty
+              value={val === "" ? "" : val}
+              onChange={(e) => {
+                onReset();
+                const raw = String(e.target.value);
+                field.onChange(raw === "" ? "" : Number(raw));
+              }}
+              onBlur={field.onBlur}
+              inputRef={field.ref}
+              name={field.name}
+              IconComponent={KeyboardArrowDown}
+              MenuProps={{ PaperProps: { sx: { direction: "rtl" } } }}
+              sx={selectSx}
+              renderValue={(v) => {
+                const current = v as number | "";
+                return current === "" ? (
+                  <span className="text-[#8A9E98]">{label}</span>
+                ) : (
+                  <span>{`${current} ${label}`}</span>
+                );
+              }}
+            >
+              <MenuItem value="">
+                <em>انتخاب کنید</em>
+              </MenuItem>
+              {options.map((n) => (
+                <MenuItem key={n} value={n}>
+                  {n} نفر
+                </MenuItem>
+              ))}
+            </Select>
+            {error ? <FormHelperText>{error}</FormHelperText> : null}
+          </FormControl>
+        );
+      }}
+    />
+  );
+}
+
 export function CapacityCheckForm({ className }: Props) {
   const checkCapacityStore = useReservationCapacityStore((s) => s.checkCapacity);
   const resetCapacityCheck = useReservationCapacityStore(
     (s) => s.resetCapacityCheck,
   );
-  const storedGuests = useReservationCapacityStore((s) => s.guests);
+  const storedMale = useReservationCapacityStore((s) => s.maleCount);
+  const storedFemale = useReservationCapacityStore((s) => s.femaleCount);
   const storedEntry = useReservationCapacityStore((s) => s.entryDate);
   const storedExit = useReservationCapacityStore((s) => s.exitDate);
   const checkCapacityApi = useCheckCapacity();
@@ -101,16 +167,31 @@ export function CapacityCheckForm({ className }: Props) {
     () =>
       z
         .object({
-          guests: z
-            .union([z.literal(""), z.number()])
-            .refine(
-              (v): v is number =>
-                typeof v === "number" && v >= 1 && v <= maxPersons,
-              `تعداد نفرات بین ۱ تا ${maxPersons} نفر الزامی است`,
-            ),
+          maleCount: z.union([z.literal(""), z.number().int().min(0)]),
+          femaleCount: z.union([z.literal(""), z.number().int().min(0)]),
           entryDate: z.string().min(1, "تاریخ ورود را انتخاب کنید"),
           exitDate: z.string().min(1, "تاریخ خروج را انتخاب کنید"),
         })
+        .refine(
+          (d) =>
+            typeof d.maleCount === "number" &&
+            typeof d.femaleCount === "number" &&
+            d.maleCount + d.femaleCount >= 1,
+          {
+            message: "حداقل یک نفر (مرد یا زن) الزامی است",
+            path: ["maleCount"],
+          },
+        )
+        .refine(
+          (d) =>
+            typeof d.maleCount !== "number" ||
+            typeof d.femaleCount !== "number" ||
+            d.maleCount + d.femaleCount <= maxPersons,
+          {
+            message: `مجموع نفرات حداکثر ${maxPersons} نفر است`,
+            path: ["femaleCount"],
+          },
+        )
         .refine((d) => d.exitDate >= d.entryDate, {
           message: "تاریخ خروج باید هم‌زمان یا بعد از تاریخ ورود باشد",
           path: ["exitDate"],
@@ -133,7 +214,9 @@ export function CapacityCheckForm({ className }: Props) {
   } = useForm<CapacityFormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
-      guests: storedGuests >= 1 ? Math.min(storedGuests, maxPersons) : "",
+      maleCount: storedMale >= 0 ? Math.min(storedMale, maxPersons) : "",
+      femaleCount:
+        storedFemale >= 0 ? Math.min(storedFemale, maxPersons) : "",
       entryDate: storedEntry || "",
       exitDate: storedExit || "",
     },
@@ -143,26 +226,32 @@ export function CapacityCheckForm({ className }: Props) {
   const watchedExit = useWatch({ control, name: "exitDate" });
   const [datePickerValues, setDatePickerValues] = useState<DateObject[]>([]);
   const guestOptions = useMemo(
-    () => Array.from({ length: maxPersons }, (_, i) => i + 1),
+    () => Array.from({ length: maxPersons + 1 }, (_, i) => i),
     [maxPersons],
   );
 
   const onValid = async (data: CapacityFormValues) => {
-    if (typeof data.guests !== "number") return;
+    if (typeof data.maleCount !== "number" || typeof data.femaleCount !== "number")
+      return;
     setCapacityError(null);
     try {
       const result = await checkCapacityApi.mutateAsync({
         enterTime: data.entryDate,
         exitTime: data.exitDate,
-        maleAmount: data.guests,
-        femaleAmount: 0,
+        maleAmount: data.maleCount,
+        femaleAmount: data.femaleCount,
       });
       if (!isCapacityAvailable(result)) {
         setCapacityError("ظرفیت کافی برای این تاریخ موجود نیست.");
         resetCapacityCheck();
         return;
       }
-      checkCapacityStore(data.guests, data.entryDate, data.exitDate);
+      checkCapacityStore(
+        data.maleCount,
+        data.femaleCount,
+        data.entryDate,
+        data.exitDate,
+      );
     } catch (err) {
       setCapacityError(
         err instanceof Error ? err.message : "بررسی ظرفیت ناموفق بود.",
@@ -177,7 +266,7 @@ export function CapacityCheckForm({ className }: Props) {
     <form
       onSubmit={handleSubmit(onValid)}
       className={cn(
-        "flex w-full flex-col gap-4 md:flex-row md:flex-wrap md:items-start lg:flex-nowrap lg:items-center lg:gap-6",
+        "flex w-full flex-col gap-4 md:flex-row md:flex-wrap md:items-start lg:flex-nowrap lg:items-center lg:gap-4",
         className,
       )}
     >
@@ -252,7 +341,7 @@ export function CapacityCheckForm({ className }: Props) {
               }}
               sx={{
                 flex: 1,
-                minWidth: { xs: "100%", md: 280 },
+                minWidth: { xs: "100%", md: 260 },
                 width: "100%",
                 "& .MuiOutlinedInput-root": {
                   height: CONTROL_H,
@@ -276,62 +365,22 @@ export function CapacityCheckForm({ className }: Props) {
         aria-hidden
       />
 
-      <Controller
-        name="guests"
-        control={control}
-        render={({ field }) => {
-          const guestsVal = field.value as CapacityFormValues["guests"];
-          return (
-            <FormControl
-              size="small"
-              required
-              error={!!errors.guests}
-              sx={{
-                minWidth: { xs: "100%", md: 322 },
-                width: { xs: "100%", md: 322 },
-              }}
-            >
-              <Select
-                displayEmpty
-                value={guestsVal === "" ? "" : guestsVal}
-                onChange={(e) => {
-                  resetCapacityCheck();
-                  const raw = String(e.target.value);
-                  field.onChange(raw === "" ? "" : Number(raw));
-                }}
-                onBlur={field.onBlur}
-                inputRef={field.ref}
-                name={field.name}
-                IconComponent={KeyboardArrowDown}
-                MenuProps={{ PaperProps: { sx: { direction: "rtl" } } }}
-                sx={selectSx}
-                renderValue={(v) => {
-                  const val = v as CapacityFormValues["guests"];
-                  return val === "" ? (
-                    <span className="text-[#8A9E98]">
-                      {`تعداد نفرات (۱ تا ${maxPersons})`}
-                    </span>
-                  ) : (
-                    <span>{`${val} نفر`}</span>
-                  );
-                }}
-              >
-                <MenuItem value="">
-                  <em>انتخاب کنید</em>
-                </MenuItem>
-                {guestOptions.map((n) => (
-                  <MenuItem key={n} value={n}>
-                    {n} نفر
-                  </MenuItem>
-                ))}
-              </Select>
-              {errors.guests?.message ? (
-                <FormHelperText>{errors.guests.message}</FormHelperText>
-              ) : null}
-            </FormControl>
-          );
-        }}
-      />
+      {countSelect(
+        "maleCount",
+        "مرد",
+        control,
+        errors.maleCount?.message,
+        guestOptions,
+        resetCapacityCheck,
+      )}
+      {countSelect(
+        "femaleCount",
+        "زن",
+        control,
+        errors.femaleCount?.message,
+        guestOptions,
+        resetCapacityCheck,
+      )}
 
       {capacityError ? (
         <p className="w-full text-sm text-red-500 md:basis-full">{capacityError}</p>

@@ -19,15 +19,31 @@ namespace Mokeb.Application.CommandHandler.AdminCommands.AddingRoomAvailability
 
         public async Task<AddingRoomAvailabilityCommandResponse> Handle(AddingRoomAvailabilityCommand request, CancellationToken cancellationToken)
         {
-            await CheckAvailabilityOfThatDayExistance(request.roomId, request.DateOfAvailability, cancellationToken);
             var room = await GetRoom(request.roomId, cancellationToken);
-            room.AddRoomAvailability(request.ToRoomAvailability(room.Capacity));
+            var end = request.ExitDate ?? request.DateOfAvailability;
+            var added = 0;
+
+            for (var day = request.DateOfAvailability; day <= end; day = day.AddDays(1))
+            {
+                var alreadyExists = await _roomRepository.CheckAvailabilityDayOfARoomAsync(
+                    request.roomId, day, cancellationToken);
+                if (alreadyExists)
+                    continue;
+
+                room.AddRoomAvailability(new RoomAvailability(day, room.Capacity));
+                added++;
+            }
+
+            // Idempotent: if every day already had availability, treat as success (no 500).
+            if (added == 0)
+                return AddingRoomAvailabilityCommandResponse.Succeeded;
 
             var savingResult = await _unitOfWork.Commit(cancellationToken);
             savingResult.ThrowIfNoChanges<NoChangesApplicationException>();
 
             return AddingRoomAvailabilityCommandResponse.Succeeded;
         }
+
         #region
         private async Task<Room> GetRoom(Guid roomId, CancellationToken ct)
         {
@@ -36,13 +52,6 @@ namespace Mokeb.Application.CommandHandler.AdminCommands.AddingRoomAvailability
                 throw new RoomNotFoundException();
             return room;
         }
-        private async Task CheckAvailabilityOfThatDayExistance(Guid roomId, DateOnly dateOfAvailability, CancellationToken ct)
-        {
-            var availabilityResult = await _roomRepository.CheckAvailabilityDayOfARoomAsync(roomId, dateOfAvailability, ct);
-            if (availabilityResult)
-                throw new ThisRoomIsAvailableAtThisDateException();
-        }
         #endregion
-
     }
 }

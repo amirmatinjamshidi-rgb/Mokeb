@@ -16,7 +16,10 @@ export type RegistrationConfirmation = {
 
 export type ReservationCapacityState = {
   activeStep: ReservationStep;
+  /** Total guests = maleCount + femaleCount (kept for legacy UI). */
   guests: number;
+  maleCount: number;
+  femaleCount: number;
   entryDate: string;
   exitDate: string;
   capacityAvailable: boolean | null;
@@ -28,7 +31,12 @@ export type ReservationCapacityState = {
   setEntryDate: (isoDate: string) => void;
   setExitDate: (isoDate: string) => void;
   resetCapacityCheck: () => void;
-  checkCapacity: (guests: number, entryDate: string, exitDate: string) => void;
+  checkCapacity: (
+    maleCount: number,
+    femaleCount: number,
+    entryDate: string,
+    exitDate: string,
+  ) => void;
   /** Moves from capacity check to guest registration. */
   continueReservation: () => void;
   /** Persists step-2 form outcome, the created request id, and moves to the confirmation step. */
@@ -44,6 +52,8 @@ const INITIAL_STATE: Pick<
   ReservationCapacityState,
   | "activeStep"
   | "guests"
+  | "maleCount"
+  | "femaleCount"
   | "entryDate"
   | "exitDate"
   | "capacityAvailable"
@@ -52,6 +62,8 @@ const INITIAL_STATE: Pick<
 > = {
   activeStep: 0,
   guests: 1,
+  maleCount: 1,
+  femaleCount: 0,
   entryDate: "",
   exitDate: "",
   capacityAvailable: null,
@@ -69,13 +81,19 @@ export const useReservationCapacityStore = create<ReservationCapacityState>()(
       setEntryDate: (entryDate) => set({ entryDate }),
       setExitDate: (exitDate) => set({ exitDate }),
       resetCapacityCheck: () => set({ capacityAvailable: null }),
-      checkCapacity: (guests, entryDate, exitDate) =>
+      checkCapacity: (maleCount, femaleCount, entryDate, exitDate) => {
+        const male = Math.max(0, Math.round(maleCount));
+        const female = Math.max(0, Math.round(femaleCount));
+        const total = Math.max(1, male + female);
         set({
-          guests: Math.max(1, Math.round(guests)),
+          maleCount: male,
+          femaleCount: female,
+          guests: total,
           entryDate,
           exitDate,
           capacityAvailable: true,
-        }),
+        });
+      },
       continueReservation: () =>
         set((s) =>
           s.activeStep === 0 && s.capacityAvailable
@@ -95,6 +113,8 @@ export const useReservationCapacityStore = create<ReservationCapacityState>()(
       partialize: (state) => ({
         activeStep: state.activeStep,
         guests: state.guests,
+        maleCount: state.maleCount,
+        femaleCount: state.femaleCount,
         entryDate: state.entryDate,
         exitDate: state.exitDate,
         capacityAvailable: state.capacityAvailable,

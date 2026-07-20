@@ -53,8 +53,7 @@ export function CapacityReservationSection({ className }: Props) {
               </h2>
 
               <p className={cn(sectionSubtitle, "w-full")}>
-                بازهٔ ورود و خروج و تعداد نفرات  را انتخاب
-                کنید.
+                بازهٔ ورود و خروج و تعداد مرد و زن را جداگانه انتخاب کنید.
               </p>
             </div>
 

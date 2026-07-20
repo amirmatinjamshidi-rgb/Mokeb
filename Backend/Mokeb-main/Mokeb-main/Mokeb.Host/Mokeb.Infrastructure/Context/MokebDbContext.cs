@@ -10,6 +10,7 @@ namespace Mokeb.Infrastructure.Context
         {
 
         }
+        public DbSet<Admin> Admins { get; set; }
         public DbSet<CaravanPrincipal> CaravanPrincipals { get; set; }
         public DbSet<Pilgrim> Pilgrims { get; set; }
         public DbSet<IndividualPrincipal> IndividualPrincipals { get; set; }
