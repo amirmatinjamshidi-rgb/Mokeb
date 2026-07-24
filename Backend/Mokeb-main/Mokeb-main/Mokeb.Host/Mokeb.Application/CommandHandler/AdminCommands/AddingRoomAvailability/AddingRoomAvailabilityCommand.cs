@@ -1,5 +1,6 @@
 ﻿using MediatR;
 using Mokeb.Application.CommandHandler.Base;
+using Mokeb.Application.CommandHandler.Base.Extension;
 
 namespace Mokeb.Application.CommandHandler.AdminCommands.AddingRoomAvailability
 {

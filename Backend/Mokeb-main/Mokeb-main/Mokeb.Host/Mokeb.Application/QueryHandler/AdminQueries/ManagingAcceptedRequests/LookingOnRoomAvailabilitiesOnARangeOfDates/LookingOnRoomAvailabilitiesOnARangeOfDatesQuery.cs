@@ -1,4 +1,5 @@
 ﻿using MediatR;
+using Mokeb.Application.CommandHandler.Base.Extension;
 using Mokeb.Application.QueryHandler.Base;
 
 namespace Mokeb.Application.QueryHandler.AdminQueries.ManagingAcceptedRequests.LookingOnRoomAvailabilitiesOnARangeOfDates
@@ -8,7 +9,7 @@ namespace Mokeb.Application.QueryHandler.AdminQueries.ManagingAcceptedRequests.L
         public Guid RequestId { get; set; }
         public override void Validate()
         {
-            throw new NotImplementedException();
+            new LookingOnRoomAvailabilitiesOnARangeOfDatesQueryValidator().Validate(this).ThrowIfNeeded();
         }
     }
 }
